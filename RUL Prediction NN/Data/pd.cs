@@ -251,17 +251,18 @@ namespace RUL_Prediction_NN.Data
 
                 if (!headers)                       //Indica si la primera linea son encabezados para descartarla
                 {
-
+                    //executionId = Convert.ToInt32(values[1]);
                     if (values.Length < 4)
                     {
                         break;
                     }
 
-                    if (Convert.ToInt32(values[1]) > temp)
-                    {
-                        executionId = executionId + 1;
-                        temp = Convert.ToInt32(values[1]);
-                    }
+                    //if (Convert.ToInt32(values[1]) > temp)
+                    //{
+                    //    executionId = executionId + 1;
+                    //    temp = Convert.ToInt32(values[1]);
+                    //}
+                    executionId = Convert.ToInt32(values[1]);
 
                     phase_list.Add(new Phase
                     {
@@ -441,13 +442,33 @@ namespace RUL_Prediction_NN.Data
 
         }
 
+        public static void phases_to_csv(string path, string sep = ",", List<Phase> columns = null, bool append = true)
+        {
+            var writer = new StreamWriter(path, append: append);
+
+            var culture = new CultureInfo("en-US");
+
+            foreach(var s in columns)
+            {
+                writer.Write("{0}", s.EntityId.ToString(culture));
+                writer.Write(sep);
+                writer.Write("{0}", s.ExecutionId.ToString(culture));
+                writer.Write(sep);
+                writer.Write(s.Time);
+                writer.Write(sep);
+                writer.Write("{0}", s.Text);
+                writer.WriteLine();
+            }
+            writer.Close();
+        }
+
         public static List<Execution> read_executions(string path, bool headers = true, char sep = ',')
         {
 
             /*
              * Lee objetos ejecuciones del set de datos de RO
              */
-
+            
             var reader = new StreamReader(path);        //Configuracion del objeto de lectura
 
             var excecution_list = new List<Execution>();
@@ -457,26 +478,51 @@ namespace RUL_Prediction_NN.Data
 
             while (!reader.EndOfStream)
             {
-
                 var line = reader.ReadLine();       //Lectura de cada linea
                 var values = line.Split(sep);       //Separacion de los datos
 
                 if (!headers)                       //Indica si la primera linea son encabezados para descartarla
                 {
-
+                    //executionId = Convert.ToInt32(values[1]);
                     if (values.Length < 7)
                     {
                         break;
                     }
+                    
+                    //if (Convert.ToInt32(values[1]) > temp)
+                    //{
+                    //    executionId = executionId + 1;
+                    //    temp = Convert.ToInt32(values[1]);
+                    //}
+                    executionId = Convert.ToInt32(values[1]);
 
-                    if (Convert.ToInt32(values[1]) > temp)
+                    if(values[4] == "NULL" && values[5] == "NULL")
                     {
-                        executionId = executionId + 1;
-                        temp = Convert.ToInt32(values[1]);
+                        excecution_list.Add(new Execution
+                        {
+                            DefinitionId = Convert.ToInt32(values[0]),
+                            ExecutionId = executionId,
+                            StartDate = Convert.ToDateTime(values[2]),
+                            EndDate = Convert.ToDateTime(values[3]),
+                            StartingOperatorId = null,
+                            EndingOperatorId = null,
+                            Name = values[6]
+                        });
+                        
                     }
 
-                    if (values[5] == "NULL")
+                    else if (values[5] == "NULL")
                     {
+                        /*
+                        var tempExecution = new Execution();
+                        tempExecution.DefinitionId = Convert.ToInt32(values[0]);
+                        tempExecution.ExecutionId = executionId;
+                        tempExecution.StartDate = Convert.ToDateTime(values[2]);
+                        tempExecution.EndDate = Convert.ToDateTime(values[3]);
+                        tempExecution.StartingOperatorId = Convert.ToInt32(values[4]);
+                        tempExecution.EndingOperatorId = null;
+                        tempExecution.Name = values[6];
+                        */
                         excecution_list.Add(new Execution
                         {
                             DefinitionId = Convert.ToInt32(values[0]),
@@ -485,6 +531,20 @@ namespace RUL_Prediction_NN.Data
                             EndDate = Convert.ToDateTime(values[3]),
                             StartingOperatorId = Convert.ToInt32(values[4]),
                             EndingOperatorId = null,
+                            Name = values[6]
+                        });
+
+                    }
+                    else if(values[4] == "NULL")
+                    {
+                        excecution_list.Add(new Execution
+                        {
+                            DefinitionId = Convert.ToInt32(values[0]),
+                            ExecutionId = executionId,
+                            StartDate = Convert.ToDateTime(values[2]),
+                            EndDate = Convert.ToDateTime(values[3]),
+                            StartingOperatorId = null,
+                            EndingOperatorId = Convert.ToInt32(values[5]),
                             Name = values[6]
                         });
                     }
@@ -503,14 +563,12 @@ namespace RUL_Prediction_NN.Data
                         });
                     }
 
-
                 }
 
                 else
                 {
                     headers = false;
                 }
-
 
             }
 
