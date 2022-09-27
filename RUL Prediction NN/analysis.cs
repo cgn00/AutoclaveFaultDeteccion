@@ -1403,15 +1403,19 @@ namespace RUL_Prediction_NN
                 
             }
 
-            var directory = base_directory + @"Samples Sorts by Phases\" + phase_name + @"\executions_with_samples.csv";
+            var directory = base_directory + @"Samples Sorts by Phases\" + phase_name ;
             var to_save = executions_with_samples.ToArray().Transpose();
 
 
-            if (!File.Exists(directory))
+            if (!File.Exists(directory + @"\executions_with_samples.csv"))
             {
+                if(!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
                 try
                 {
-                    pd.to_csv(directory, columns: to_save, append: false);
+                    pd.to_csv(directory + @"\executions_with_samples.csv", columns: to_save, append: false);
                 }
 
                 catch (Exception e)

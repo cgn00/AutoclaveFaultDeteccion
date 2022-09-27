@@ -32,7 +32,7 @@ namespace AutoclaveFailDetection
 
             //RUL_Prediction_NN.analysis.Run("Presurización");
             
-            RUL_Prediction_NN.analysis.SplitSequences();
+            RUL_Prediction_NN.analysis.RunAllPhases();
 
             Console.WriteLine("Finish");
             Console.ReadLine();
