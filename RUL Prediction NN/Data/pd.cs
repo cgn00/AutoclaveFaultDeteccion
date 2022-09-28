@@ -107,7 +107,7 @@ namespace RUL_Prediction_NN.Data
                         writer.WriteLine();
 
                     }
-                    Console.WriteLine("CSV Saved");
+                    //Console.WriteLine("CSV Saved");
 
                 }
 
