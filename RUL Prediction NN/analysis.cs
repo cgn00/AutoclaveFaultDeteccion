@@ -639,13 +639,14 @@ namespace RUL_Prediction_NN
             Console.WriteLine("times.count = {0}", times.Count);
             var durations_times = new List<double>();
 
+
             for (int i = 0; i < indexes.Count; i++)
             {
                 var execution = new List<Sample>();
                 try
                 {
                     //Console.WriteLine(directory + @"\Samples For Executions Cluster\" + "executions_" + (i + 1));
-                    execution = pd.read_samples(directory + @"\Samples For Executions Cluster\" + "executions_" + (i+1) + ".csv", partial:true);
+                    execution = pd.read_samples(directory + @"\Samples For Executions Cluster\" + "executions_" + indexes[i] + ".csv", partial:true);
                 }
                 catch (Exception e)
                 {
@@ -913,9 +914,20 @@ namespace RUL_Prediction_NN
 
 
             // Save samples
-            int index = 1;
+            //float[,] indexes;
+            var indexes = new List<float>();
+            try
+            {
+                string path = sequence_directory + @"Samples Sorts by Phases\" + phase_name + @"\executions_with_samples.csv";
+                indexes = pd.read_csv(path).Reshape().ToList();
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+            }
 
-            
             Directory.CreateDirectory(directory);
 
             for (int i = 0; i < sam.Count; i++)
@@ -924,7 +936,7 @@ namespace RUL_Prediction_NN
                 sorted_samples = SortAscendingTimeSeries(sam[i]);
                 try
                 {
-                    pd.samples_to_csv(directory + @"executions_" + index + ".csv", columns: sorted_samples);
+                    pd.samples_to_csv(directory + @"executions_" + indexes[i] + ".csv", columns: sorted_samples);
                 }
 
                 catch (Exception e)
@@ -935,7 +947,6 @@ namespace RUL_Prediction_NN
                     return 0;
                 }
 
-                index = index + 1;
             }
 
             Console.WriteLine("Correct executions: {0}", sam.Count);
@@ -967,14 +978,30 @@ namespace RUL_Prediction_NN
             var index = total_executions;
             var directory = sequence_directory + @"Samples Sorts by Phases\" + phase_name + samples_directory;
 
+            var indexes = new List<float>();
+
+            try
+            {
+                string path = sequence_directory + @"Samples Sorts by Phases\" + phase_name + @"\executions_with_samples.csv";
+                indexes = pd.read_csv(path).Reshape().ToList();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return;
+            }
+
             for (int i = 1; i < index + 1; i++)
             {
                 //Console.WriteLine(i);
                 var sample = new List<Sample>();
 
+
                 try
                 {
-                    sample = pd.read_samples(directory + "executions_" + i + ".csv", headers: false, partial: true);
+                    sample = pd.read_samples(directory + "executions_" + indexes[i-1] + ".csv", headers: false, partial: true);
                 }
 
                 catch (Exception e)
@@ -1435,7 +1462,7 @@ namespace RUL_Prediction_NN
                 if(temp.Count > 0)
                 {
                     divided_samples.Add(temp);
-                    executions_with_samples.Add(i);
+                    executions_with_samples.Add(i+1);
                 }
                 else
                 {
