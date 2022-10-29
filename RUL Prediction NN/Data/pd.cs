@@ -442,6 +442,45 @@ namespace RUL_Prediction_NN.Data
 
         }
 
+        public static void executions_to_csv(string path, string sep = ",", List<string> headers = null, List<Execution> columns = null, bool append = false)
+        {
+            var writer = new StreamWriter(path, append: append);
+
+            var culture = new CultureInfo("en-US");
+
+            if (headers is not null)
+            {
+                foreach (var a in headers)
+                {
+                    writer.Write(a + ",");
+                }
+
+                //Cambio de fila
+                writer.WriteLine();
+            }
+
+            foreach (var s in columns)
+            {
+                writer.Write("{0}", s.DefinitionId.ToString(culture));
+                writer.Write(sep);
+                writer.Write("{0}", s.ExecutionId.ToString(culture));
+                writer.Write(sep);
+                writer.Write("{0}", s.StartDate.ToString(culture));
+                writer.Write(sep);
+                writer.Write("{0}", s.EndDate.ToString(culture));
+                writer.Write(sep);
+                writer.Write("{0}", s.StartingOperatorId);
+                writer.Write(sep);
+                writer.Write("{0}", s.EndingOperatorId);
+                writer.Write(sep);
+                writer.Write("{0}", s.Name);
+
+                writer.WriteLine();
+            }
+            writer.Close();
+        }
+
+
         public static void phases_to_csv(string path, string sep = ",", List<Phase> columns = null, bool append = true)
         {
             var writer = new StreamWriter(path, append: append);

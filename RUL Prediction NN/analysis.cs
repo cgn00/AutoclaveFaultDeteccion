@@ -7,6 +7,7 @@ using Tensorflow.NumPy;
 
 namespace RUL_Prediction_NN
 {
+
     public static class analysis
     {
 
@@ -28,12 +29,69 @@ namespace RUL_Prediction_NN
         static string samples_directory = @"\Samples For Executions Cluster\";
         static string phases_directory = @"\Datos\phases_to_analysis.csv";
         //static string phases_directory = @"\Datos\phases.csv";
-        static string executions_directory = @"Datos\executions.csv";
+        static string executions_directory = @"Datos\clean_executions.csv";
+        static string executions_to_filter = @"Datos\executions.csv";
         static string? sequence_directory;
         static string? phases_by_sequence_directory;
         /*
          *  Main functions
          */
+
+        public static void CleanExecutionCSV()
+        {
+            var executions = new List<Execution>();
+            var clean_executions = new List<Execution>();
+
+            string path_to_save = base_directory + executions_directory;
+            string head = "SequenceId,ExecutionId,StartTime,EndTime,StartOpId,EndOperatorId,SequenceName";
+            List<string> header = new List<string>();
+
+            foreach(var value in head.Split(','))
+            {
+                header.Add(value);
+            }
+
+            try
+            {
+                executions = pd.read_executions(base_directory + executions_to_filter, headers: true, sep: ',');
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return;
+            }
+            
+            if(executions[0].StartDate < executions[0].EndDate)
+            {
+                clean_executions.Add(executions[0]);
+            }
+
+            for(int i = 1; i<executions.Count; i++)
+            {
+                if(executions[i].StartDate > clean_executions[clean_executions.Count - 1].EndDate && executions[i].StartDate < executions[i].EndDate)
+                {
+                    //this conditions is to delete executions with incorrect Date
+                    clean_executions.Add(executions[i]);
+                }
+            }
+
+            try
+            {
+                pd.executions_to_csv(path_to_save, sep: ",", headers:header, columns:clean_executions, append: false);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return;
+            }
+
+            Console.WriteLine("Executions.Count = {0}", executions.Count);
+            Console.WriteLine("Clean_Executions.Count = {0}", clean_executions.Count);
+        }
 
         public static void SplitSequences()
         {
