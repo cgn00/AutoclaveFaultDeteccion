@@ -17,6 +17,8 @@ namespace RUL_Prediction_NN
 
         static List<int> n_variables = new List<int>() {7, 8, 9, 10, 11, 12, 13 }; // 
 
+        static int index = 0; //variable created to record de index of the serch in the function: GetExecutionByID
+
         // Base directory for save and read results of analysis
         static string base_directory = @"D:\CGN\projects\AutoclaveFailDeteccion\data\";
         static string conductivity_directory = @"\Conductivities\";
@@ -642,11 +644,11 @@ namespace RUL_Prediction_NN
 
             for (int i = 0; i < indexes.Count; i++)
             {
-                var execution = new List<Sample>();
+                var sample = new List<Sample>();
                 try
                 {
                     //Console.WriteLine(directory + @"\Samples For Executions Cluster\" + "executions_" + (i + 1));
-                    execution = pd.read_samples(directory + @"\Samples For Executions Cluster\" + "executions_" + indexes[i] + ".csv", partial:true);
+                    sample = pd.read_samples(directory + @"\Samples For Executions Cluster\" + "executions_" + indexes[i] + ".csv", partial:true);
                 }
                 catch (Exception e)
                 {
@@ -655,8 +657,8 @@ namespace RUL_Prediction_NN
                     Console.ReadKey();
                     return;
                 }
-                durations_times.Add((execution[execution.Count - 1].Time - execution[0].Time).TotalMinutes);
-                //durations_times.Add((times[(int)indexes[i]].Item2 - times[(int)indexes[i]].Item1).TotalMinutes);   
+                //durations_times.Add((sample[sample.Count - 1].Time - sample[0].Time).TotalMinutes);
+                durations_times.Add((times[(int)indexes[i] - 1].Item2 - times[(int)indexes[i] - 1].Item1).TotalMinutes);   
             }
 
             var to_save = durations_times.ToArray().Transpose();
@@ -1334,12 +1336,13 @@ namespace RUL_Prediction_NN
 
             var phases = new List<Phase>();
             var phases_by_sequence = new List<Phase>();
+            var executions = new List<Execution>();
 
             try
             {
-                //phases = pd.read_phases(sequence_directory + phases_by_sequence_directory);
-                phases = pd.read_phases(base_directory + phases_directory);
+                //phases = pd.read_phases(base_directory + phases_directory);
                 phases_by_sequence = pd.read_phases(sequence_directory + phases_by_sequence_directory, headers:false);
+                executions = pd.read_executions(base_directory + executions_directory, headers: true, sep: ',');
             }
 
             catch (Exception e)
@@ -1349,23 +1352,55 @@ namespace RUL_Prediction_NN
                 Console.ReadKey();
                 return null;
             }
+            
 
+            var times = new List<(DateTime, DateTime)>();
+
+            for(int i = 0; i< phases_by_sequence.Count - 1; i++)
+            {
+                if(phases_by_sequence[i].Text == phase_name)
+                {
+                    var exec = GetExecutionByID(executions, phases_by_sequence[i].ExecutionId);
+
+                    if (exec != null)
+                    {
+                        if (phases_by_sequence[i+1].Time > exec.EndDate)
+                        {
+                            //phase[i] is the last phase of the execution
+                            times.Add((phases_by_sequence[i].Time, exec.EndDate));
+                        }
+                        else
+                        {
+                            //phase[i] isn't the last phase of the execution
+                            times.Add((phases_by_sequence[i].Time, phases_by_sequence[i + 1].Time));
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Execution ID not found\npress key to exit");
+                        Console.ReadKey();
+                        return null;
+                    }
+
+                }
+            }
+            /*
+             
             var phases_ids_by_sequence = new List<int>();
 
             foreach (var phase_sequen in phases_by_sequence)
             {
                 phases_ids_by_sequence.Add(phase_sequen.ExecutionId);
             }
-
-            var times = new List<(DateTime, DateTime)>();
-
-            for( int i = 0; i < phases.Count-1; i++)
+            
+            for ( int i = 0; i < phases.Count-1; i++)
             {
                 if (phases[i].Text == phase_name && phases_ids_by_sequence.Contains(phases[i].ExecutionId))
                 {
                     times.Add((phases[i].Time, phases[i + 1].Time));
                 }
             }
+            */
             /*
             for (int i = 0; i < phases.Count; i++)
             {   
@@ -1393,6 +1428,22 @@ namespace RUL_Prediction_NN
 
             return times;
 
+        }
+
+        static Execution GetExecutionByID(List<Execution> executions, int id)
+        {
+            ///Helper function to obtain the Execution of an especific ID to use to obtain de limits times of a phase
+            var exec = new Execution();
+            
+            for(var i = index; i < executions.Count; i++)
+            {
+                if(executions[i].ExecutionId == id)
+                { 
+                    return executions[i];
+                }
+            }
+
+            return null;
         }
 
         static List<List<Sample>> GetSamplesDividedByPhasesAndVariable(List<Sample> samples, string phase_name , int variable_id = 0)
