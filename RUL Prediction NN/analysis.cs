@@ -1566,8 +1566,8 @@ namespace RUL_Prediction_NN
 
                 if (temp.Count != 0)
                 {
-                    var temp_sorts_samples = SortAscendingTimeSeries(temp);  // sort chronologically the time serie 
-                    variables_with_samples.Add(temp_sorts_samples);
+                    //var temp_sorts_samples = SortAscendingTimeSeries(temp);  // sort chronologically the time serie 
+                    variables_with_samples.Add(temp);
                 }
 
             }
