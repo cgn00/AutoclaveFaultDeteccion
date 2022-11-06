@@ -39,10 +39,19 @@ namespace RUL_Prediction_NN
 
         public static void CleanExecutionCSV()
         {
+            ///this function is to delete executions with incorrect Start or End Date
+            
+            string path_to_save = base_directory + executions_directory;
+
+            if(File.Exists(path_to_save))
+            {
+                return;
+            }
+
             var executions = new List<Execution>();
             var clean_executions = new List<Execution>();
 
-            string path_to_save = base_directory + executions_directory;
+            
             string head = "SequenceId,ExecutionId,StartTime,EndTime,StartOpId,EndOperatorId,SequenceName";
             List<string> header = new List<string>();
 
@@ -70,7 +79,7 @@ namespace RUL_Prediction_NN
 
             for(int i = 1; i<executions.Count; i++)
             {
-                if(executions[i].StartDate > clean_executions[clean_executions.Count - 1].EndDate && executions[i].StartDate < executions[i].EndDate)
+                if(executions[i].StartDate >= clean_executions[clean_executions.Count - 1].EndDate && executions[i].StartDate < executions[i].EndDate)
                 {
                     //this conditions is to delete executions with incorrect Date
                     clean_executions.Add(executions[i]);
@@ -1416,20 +1425,22 @@ namespace RUL_Prediction_NN
 
             for(int i = 0; i< phases_by_sequence.Count - 1; i++)
             {
+                //serach in the list of the phases by sequence the phase that it's being analyzed at this time
                 if(phases_by_sequence[i].Text == phase_name)
                 {
-                    var exec = GetExecutionByID(executions, phases_by_sequence[i].ExecutionId);
+                    var exec = GetExecutionByID(executions, phases_by_sequence[i].ExecutionId); //obtain the execution where the actual phase belong
 
                     if (exec != null)
                     {
-                        if (phases_by_sequence[i+1].Time > exec.EndDate)
+                        if (phases_by_sequence[i+1].Time > exec.EndDate)//ask if the next phase start after the end Date of the execution that belong the actual phase
                         {
+                            //if enter here means that this phase is the last of the execution, then the end of this phase is the end Date of the execution
                             //phase[i] is the last phase of the execution
                             times.Add((phases_by_sequence[i].Time, exec.EndDate));
                         }
                         else
                         {
-                            //phase[i] isn't the last phase of the execution
+                            //phase[i] isn't the last phase of the execution, the end of the phase is the start Date of the next phase
                             times.Add((phases_by_sequence[i].Time, phases_by_sequence[i + 1].Time));
                         }
                     }
@@ -1493,10 +1504,11 @@ namespace RUL_Prediction_NN
             ///Helper function to obtain the Execution of an especific ID to use to obtain de limits times of a phase
             var exec = new Execution();
             
-            for(var i = index; i < executions.Count; i++)
+            for(var i = 0; i < executions.Count; i++)
             {
                 if(executions[i].ExecutionId == id)
-                { 
+                {
+                    index = i;// save the index, that will be used the next time to start the search at this point 
                     return executions[i];
                 }
             }

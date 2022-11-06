@@ -465,13 +465,13 @@ namespace RUL_Prediction_NN.Data
                 writer.Write(sep);
                 writer.Write("{0}", s.ExecutionId.ToString(culture));
                 writer.Write(sep);
-                writer.Write("{0}", s.StartDate.ToString(culture));
+                writer.Write(s.StartDate);
                 writer.Write(sep);
-                writer.Write("{0}", s.EndDate.ToString(culture));
+                writer.Write(s.EndDate);
                 writer.Write(sep);
-                writer.Write("{0}", s.StartingOperatorId);
+                writer.Write("{0}", s.StartingOperatorId==null ? "NULL" : s.StartingOperatorId);
                 writer.Write(sep);
-                writer.Write("{0}", s.EndingOperatorId);
+                writer.Write("{0}", s.EndingOperatorId==null ? "NULL" : s.EndingOperatorId);
                 writer.Write(sep);
                 writer.Write("{0}", s.Name);
 
@@ -510,7 +510,7 @@ namespace RUL_Prediction_NN.Data
             
             var reader = new StreamReader(path);        //Configuracion del objeto de lectura
 
-            var excecution_list = new List<Execution>();
+            var execution_list = new List<Execution>();
 
             int executionId = 0;
             int temp = 0;
@@ -537,7 +537,7 @@ namespace RUL_Prediction_NN.Data
 
                     if(values[4] == "NULL" && values[5] == "NULL")
                     {
-                        excecution_list.Add(new Execution
+                        execution_list.Add(new Execution
                         {
                             DefinitionId = Convert.ToInt32(values[0]),
                             ExecutionId = executionId,
@@ -562,7 +562,7 @@ namespace RUL_Prediction_NN.Data
                         tempExecution.EndingOperatorId = null;
                         tempExecution.Name = values[6];
                         */
-                        excecution_list.Add(new Execution
+                        execution_list.Add(new Execution
                         {
                             DefinitionId = Convert.ToInt32(values[0]),
                             ExecutionId = executionId,
@@ -576,7 +576,7 @@ namespace RUL_Prediction_NN.Data
                     }
                     else if(values[4] == "NULL")
                     {
-                        excecution_list.Add(new Execution
+                        execution_list.Add(new Execution
                         {
                             DefinitionId = Convert.ToInt32(values[0]),
                             ExecutionId = executionId,
@@ -590,16 +590,26 @@ namespace RUL_Prediction_NN.Data
 
                     else
                     {
-                        excecution_list.Add(new Execution
-                        {
-                            DefinitionId = Convert.ToInt32(values[0]),
-                            ExecutionId = executionId,
-                            StartDate = Convert.ToDateTime(values[2]),
-                            EndDate = Convert.ToDateTime(values[3]),
-                            StartingOperatorId = Convert.ToInt32(values[4]),
-                            EndingOperatorId = Convert.ToInt32(values[5]),
-                            Name = values[6]
-                        });
+                        var tempExecution = new Execution();
+                        tempExecution.DefinitionId = Convert.ToInt32(values[0]);
+                        tempExecution.ExecutionId = executionId;
+                        tempExecution.StartDate = Convert.ToDateTime(values[2]);
+                        tempExecution.EndDate = Convert.ToDateTime(values[3]);
+                        tempExecution.StartingOperatorId = Convert.ToInt32(values[4]);
+                        tempExecution.EndingOperatorId = Convert.ToInt32(values[5]);
+                        tempExecution.Name = values[6];
+                        execution_list.Add((Execution)tempExecution);
+
+                        //execution_list.Add(new Execution
+                        //{
+                        //    DefinitionId = Convert.ToInt32(values[0]),
+                        //    ExecutionId = executionId,
+                        //    StartDate = Convert.ToDateTime(values[2]),
+                        //    EndDate = Convert.ToDateTime(values[3]),
+                        //    StartingOperatorId = Convert.ToInt32(values[4]),
+                        //    EndingOperatorId = Convert.ToInt32(values[5]),
+                        //    Name = values[6]
+                        //});
                     }
 
                 }
@@ -613,7 +623,7 @@ namespace RUL_Prediction_NN.Data
 
             reader.Close();                             //Cierre del documento
 
-            return excecution_list;
+            return execution_list;
 
         }
 
