@@ -12,6 +12,9 @@
     <PackageReference Include="Accord.Math" Version="3.8.2-alpha" />
     <PackageReference Include="Accord.Statistics" Version="3.8.2-alpha" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Data.Analysis" Version="0.20.0" />
+    <PackageReference Include="Microsoft.ML" Version="2.0.0" />
+    <PackageReference Include="Pandas.NET" Version="0.3.0" />
     <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.7.0" />
     <PackageReference Include="TensorFlow.Keras" Version="0.7.0" />
     <PackageReference Include="TensorFlow.NET" Version="0.70.1" />

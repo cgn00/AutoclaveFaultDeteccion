@@ -503,11 +503,11 @@ namespace RUL_Prediction_NN.Data
 
         public static List<Execution> read_executions(string path, bool headers = true, char sep = ',')
         {
-
+#if false
             /*
              * Lee objetos ejecuciones del set de datos de RO
              */
-            
+
             var reader = new StreamReader(path);        //Configuracion del objeto de lectura
 
             var execution_list = new List<Execution>();
@@ -624,7 +624,8 @@ namespace RUL_Prediction_NN.Data
             reader.Close();                             //Cierre del documento
 
             return execution_list;
-
+#endif
+            throw new NotImplementedException();
         }
 
         public static List<List<double>> read_samples_of_executions(string path, bool headers = false, string sep = ",")

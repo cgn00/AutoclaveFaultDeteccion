@@ -1,8 +1,12 @@
 ﻿using Accord.Math;
+using Microsoft.Data.Analysis;
+using Microsoft.ML;
 using RUL_Prediction_NN.Data;
 using RUL_Prediction_NN.data_model;
+using System.Data;
 //using Accord.Statistics.Kernels;
 using Tensorflow;
+using Tensorflow.Contexts;
 using Tensorflow.NumPy;
 
 namespace RUL_Prediction_NN
@@ -21,7 +25,7 @@ namespace RUL_Prediction_NN
         static int index = 0; //variable created to record de index of the serch in the function: GetExecutionByID
 
         // Base directory for save and read results of analysis
-        static string base_directory = @"D:\CGN\projects\AutoclaveFailDeteccion\data\";
+        static string base_directory = @"D:\cujae\Programación Avanzada\Curso 2022\Laboratorios\Christian Guzman\";
         static string conductivity_directory = @"\Conductivities\";
         static string duration_directory = @"\Durations\";
         static string variables_directory = @"\Variables\";
@@ -62,6 +66,13 @@ namespace RUL_Prediction_NN
 
             try
             {
+                var mlContext = new MLContext();
+                IDataView data = mlContext.Data.LoadFromTextFile<Execution>(base_directory + executions_to_filter, separatorChar: ',', hasHeader: true);
+                var df = data.ToDataFrame();
+
+                //var df = DataFrame.LoadCsv(base_directory + executions_to_filter);
+                //df.FillNulls(0, inPlace: true);
+
                 executions = pd.read_executions(base_directory + executions_to_filter, headers: true, sep: ',');
             }
             catch (Exception e)
