@@ -34,7 +34,7 @@ namespace RUL_Prediction_NN
         static string phases_directory = @"\Datos\phases_to_analysis.csv";
         //static string phases_directory = @"\Datos\phases.csv";
         static string executions_directory = @"Datos\clean_executions.csv";
-        static string executions_to_filter = @"Datos\executions.csv";
+        static string executions_to_filter = @"Datos\executionsNaN.csv";
         static string? sequence_directory;
         static string? phases_by_sequence_directory;
         /*
@@ -69,7 +69,7 @@ namespace RUL_Prediction_NN
                 var mlContext = new MLContext();
                 IDataView data = mlContext.Data.LoadFromTextFile<Execution>(base_directory + executions_to_filter, separatorChar: ',', hasHeader: true);
                 var df = data.ToDataFrame();
-
+                var dtCheck = df.Columns["StartDate"].ElementwiseLessThanOrEqual(df.Columns["EndDate"]);
                 //var df = DataFrame.LoadCsv(base_directory + executions_to_filter);
                 //df.FillNulls(0, inPlace: true);
 
