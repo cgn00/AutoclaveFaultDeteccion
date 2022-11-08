@@ -4,15 +4,7 @@ import pandas as pd
 path = "D:\\CGN\projects\\AutoclaveFailDeteccion\\data\\Datos\\executions.csv"
 
 data = pd.read_csv(path, sep=",")
+data = data.fillna(0)
+data = data.astype({'StartOpId':'int32', 'EndOperatorId':'int32'})
 
-rows = len(data.axes[0])
-
-text = "NULL"
-
-for i in range(1, rows, 1):
-    if data.loc[i,"StartOpId"] == text:
-        data.loc[i,"StartOpId"] = "NaN"
-    elif data.loc[i,"EndOperatorId"] == text:
-        data.loc[i,"EndOperatorId"] = "NaN"
-
-data.to_csv("D:\\CGN\projects\\AutoclaveFailDeteccion\\data\\Datos\\executionsNaN.csv")
+data.to_csv("D:\\CGN\projects\\AutoclaveFailDeteccion\\data\\Datos\\executions_new.csv", index=False)
