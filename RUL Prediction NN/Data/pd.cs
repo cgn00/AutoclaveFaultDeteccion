@@ -214,15 +214,6 @@ namespace RUL_Prediction_NN.Data
 
         }
 
-
-
-
-
-
-
-
-
-
         /*
          * Read and write functions for RO data
          */

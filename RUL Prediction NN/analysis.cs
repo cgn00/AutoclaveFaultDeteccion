@@ -4,6 +4,7 @@ using Microsoft.ML;
 using RUL_Prediction_NN.Data;
 using RUL_Prediction_NN.data_model;
 using System.Data;
+using System.Linq;
 //using Accord.Statistics.Kernels;
 using Tensorflow;
 using Tensorflow.Contexts;
@@ -14,9 +15,6 @@ namespace RUL_Prediction_NN
 
     public static class analysis
     {
-
-
-
         // List of all variables for analysis
         //static List<int> n_variables = new List<int>() { 12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 };
 
@@ -25,21 +23,57 @@ namespace RUL_Prediction_NN
         static int index = 0; //variable created to record de index of the serch in the function: GetExecutionByID
 
         // Base directory for save and read results of analysis
-        static string base_directory = @"D:\cujae\Programación Avanzada\Curso 2022\Laboratorios\Christian Guzman\";
-        static string conductivity_directory = @"\Conductivities\";
-        static string duration_directory = @"\Durations\";
-        static string variables_directory = @"\Variables\";
-        static string data_directory = @"\Datas\";
-        static string samples_directory = @"\Samples For Executions Cluster\";
-        static string phases_directory = @"\Datos\phases_to_analysis.csv";
+        static string base_directory = @"D:\CGN\projects\AutoclaveFailDeteccion\data";
+        static readonly string conductivity_directory = @"\Conductivities\";
+        static readonly string duration_directory = @"\Durations\";
+        static readonly string variables_directory = @"\Variables\";
+        static readonly string data_directory = @"\Datas\";
+        static readonly string samples_directory = @"\Samples For Executions Cluster\";
+        static readonly string phases_directory = @"\Datos\phases_to_analysis.csv";
         //static string phases_directory = @"\Datos\phases.csv";
-        static string executions_directory = @"Datos\clean_executions.csv";
-        static string executions_to_filter = @"Datos\executionsNaN.csv";
+        static readonly string executions_directory = @"Datos\clean_executions.csv";
+        static readonly string executions_to_filter = @"Datos\executionsNaN.csv";
         static string? sequence_directory;
         static string? phases_by_sequence_directory;
         /*
          *  Main functions
          */
+
+        public static void LoadBaseDirectory()
+        {
+            ///This functions is to load the Base Directory string to read and save the results of the Execution of the pogram
+            ///it's necesary to have a file: baseDirectory.txt with the base directory, located at:..\source\repos\AutoclaveFailDetection
+            
+            var dir = Directory.GetCurrentDirectory();
+            var dir_split = dir.Split('\\');
+
+            var length = dir_split.Length;  
+
+            //a loop to delete the reference to bin\debug\net.6..
+            for (int i = length-1; i >= length-3; i--)
+            {
+
+                dir_split = dir_split.RemoveAt(i);
+            }
+
+            var path = String.Join(@"\", dir_split);
+
+            try
+            {
+                
+                var reader = new StreamReader( path + @"\baseDirectory.txt");        //Configuracion del objeto de lectura
+                base_directory = reader.ReadToEnd();
+                reader.Close();
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return;
+            }
+            Console.WriteLine(base_directory);
+        }
 
         public static void CleanExecutionCSV()
         {

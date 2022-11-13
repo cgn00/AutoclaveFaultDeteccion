@@ -30,11 +30,11 @@ namespace AutoclaveFailDetection
         static void Main(string[] args)
         {
 
-            //RUL_Prediction_NN.analysis.Run("Presurización");
+            RUL_Prediction_NN.analysis.LoadBaseDirectory();
             
-            RUL_Prediction_NN.analysis.CleanExecutionCSV();
+            //RUL_Prediction_NN.analysis.CleanExecutionCSV();
 
-            RUL_Prediction_NN.analysis.SplitSequences();
+            //RUL_Prediction_NN.analysis.SplitSequences();
 
             Console.WriteLine("Finish");
             Console.ReadLine();
