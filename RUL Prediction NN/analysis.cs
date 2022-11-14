@@ -4,23 +4,26 @@ using Microsoft.ML;
 using RUL_Prediction_NN.Data;
 using RUL_Prediction_NN.data_model;
 using System.Data;
+using System.Reflection;
 using System.Linq;
 //using Accord.Statistics.Kernels;
 using Tensorflow;
 using Tensorflow.Contexts;
 using Tensorflow.NumPy;
+using Microsoft.Extensions.Logging;
+using log4net;
+using log4net.Config;
 
 namespace RUL_Prediction_NN
 {
 
-    public static class analysis
+    public static class Analysis
     {
-        // List of all variables for analysis
-        //static List<int> n_variables = new List<int>() { 12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 };
-
         static List<int> n_variables = new List<int>() {7, 8, 9, 10, 11, 12, 13 }; // 
 
         static int index = 0; //variable created to record de index of the serch in the function: GetExecutionByID
+
+        private static readonly ILog _log = LogManager.GetLogger(typeof(Analysis));
 
         // Base directory for save and read results of analysis
         static string base_directory = @"D:\CGN\projects\AutoclaveFailDeteccion\data";
@@ -35,10 +38,11 @@ namespace RUL_Prediction_NN
         static readonly string executions_to_filter = @"Datos\executionsNaN.csv";
         static string? sequence_directory;
         static string? phases_by_sequence_directory;
-        /*
-         *  Main functions
-         */
 
+
+        /*
+              Main functions
+        */
         public static void LoadBaseDirectory()
         {
             ///This functions is to load the Base Directory string to read and save the results of the Execution of the pogram
@@ -49,6 +53,9 @@ namespace RUL_Prediction_NN
 
             var length = dir_split.Length;  
 
+            //var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            //XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+
             //a loop to delete the reference to bin\debug\net.6..
             for (int i = length-1; i >= length-3; i--)
             {
@@ -58,15 +65,17 @@ namespace RUL_Prediction_NN
 
             var path = String.Join(@"\", dir_split);
 
+            _log.Info($"path = {path}");
+
             try
             {
-                
                 var reader = new StreamReader( path + @"\baseDirectory.txt");        //Configuracion del objeto de lectura
                 base_directory = reader.ReadToEnd();
                 reader.Close();
             }
             catch(Exception e)
             {
+                //_log.Error(e.Message);
                 Console.WriteLine(e.Message);
                 Console.WriteLine("Press to exit...");
                 Console.ReadKey();
@@ -86,28 +95,25 @@ namespace RUL_Prediction_NN
                 return;
             }
 
-            var executions = new List<Execution>();
+            var executionsList = new List<Execution>();
             var clean_executions = new List<Execution>();
 
-            
-            string head = "SequenceId,ExecutionId,StartTime,EndTime,StartOpId,EndOperatorId,SequenceName";
-            List<string> header = new List<string>();
-
-            foreach(var value in head.Split(','))
-            {
-                header.Add(value);
-            }
+            List<string> headers = new List<string> { "SequenceId","ExecutionId","StartTime","EndTime","StartOpId","EndOperatorId","SequenceName" };
 
             try
             {
                 var mlContext = new MLContext();
                 IDataView data = mlContext.Data.LoadFromTextFile<Execution>(base_directory + executions_to_filter, separatorChar: ',', hasHeader: true);
                 var df = data.ToDataFrame();
-                var dtCheck = df.Columns["StartDate"].ElementwiseLessThanOrEqual(df.Columns["EndDate"]);
+                
+
+                executionsList = DataFrameToList<Execution>(df);
+                //var dtCheck = df.Columns["StartDate"].ElementwiseLessThanOrEqual<DataFrameColumn>(df.Columns["EndDate"]);
+                
                 //var df = DataFrame.LoadCsv(base_directory + executions_to_filter);
                 //df.FillNulls(0, inPlace: true);
 
-                executions = pd.read_executions(base_directory + executions_to_filter, headers: true, sep: ',');
+                //executions = pd.read_executions(base_directory + executions_to_filter, headers: true, sep: ',');
             }
             catch (Exception e)
             {
@@ -117,23 +123,23 @@ namespace RUL_Prediction_NN
                 return;
             }
             
-            if(executions[0].StartDate < executions[0].EndDate)
+            if(executionsList[0].StartDate < executionsList[0].EndDate)
             {
-                clean_executions.Add(executions[0]);
+                clean_executions.Add(executionsList[0]);
             }
 
-            for(int i = 1; i<executions.Count; i++)
+            for(int i = 1; i<executionsList.Count; i++)
             {
-                if(executions[i].StartDate >= clean_executions[clean_executions.Count - 1].EndDate && executions[i].StartDate < executions[i].EndDate)
+                if(executionsList[i].StartDate >= clean_executions[clean_executions.Count - 1].EndDate && executionsList[i].StartDate < executionsList[i].EndDate)
                 {
                     //this conditions is to delete executions with incorrect Date
-                    clean_executions.Add(executions[i]);
+                    clean_executions.Add(executionsList[i]);
                 }
             }
 
             try
             {
-                pd.executions_to_csv(path_to_save, sep: ",", headers:header, columns:clean_executions, append: false);
+                pd.executions_to_csv(path_to_save, sep: ",", headers:headers, columns:clean_executions, append: false);
             }
             catch (Exception e)
             {
@@ -143,7 +149,7 @@ namespace RUL_Prediction_NN
                 return;
             }
 
-            Console.WriteLine("Executions.Count = {0}", executions.Count);
+            Console.WriteLine("Executions.Count = {0}", executionsList.Count);
             Console.WriteLine("Clean_Executions.Count = {0}", clean_executions.Count);
         }
 
@@ -1734,26 +1740,35 @@ namespace RUL_Prediction_NN
             return temp;
         }
 
+        private static List<T> DataFrameToList<T>(DataFrame df)
+        {
+            ///Function to convert a Data Frame into a List
+            List<T> data = new List<T>(); 
+            foreach (var row in df.Rows)
+            {
+                T item = GetItem<T>(row);
+                data.Add(item);
+            }
+            return data;
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        private static T GetItem<T>(DataFrameRow dfr)
+        {
+            ///Helper function to obtain an Object <T> from a row of a Data Frame
+            ///In the Class <T> properties most be declared in the same order that appears in Data Base:
+            ///Propertie(i) most be Column(i) 
+            Type temp = typeof(T);
+            T obj = Activator.CreateInstance<T>();
+            
+            int i = 0;
+            foreach(PropertyInfo pro in temp.GetProperties())
+            {
+                pro.SetValue(obj, dfr[i], null);
+                i++;
+            }        
+            
+            return obj;
+        }
 
         /*
          *  Extensions
@@ -1790,7 +1805,5 @@ namespace RUL_Prediction_NN
             return destination;
 
         }
-
-
     }
 }

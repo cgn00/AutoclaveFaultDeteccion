@@ -29,16 +29,14 @@ namespace AutoclaveFailDetection
     {
         static void Main(string[] args)
         {
-
-            RUL_Prediction_NN.analysis.LoadBaseDirectory();
+            RUL_Prediction_NN.Analysis.LoadBaseDirectory();
             
-            //RUL_Prediction_NN.analysis.CleanExecutionCSV();
+            RUL_Prediction_NN.Analysis.CleanExecutionCSV();
 
             //RUL_Prediction_NN.analysis.SplitSequences();
 
             Console.WriteLine("Finish");
             Console.ReadLine();
-
 
         }
 
