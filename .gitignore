@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Base directory to execute code
+baseDirectory.txt
+
 # User-specific files
 *.rsuser
 *.suo
