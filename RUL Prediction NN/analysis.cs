@@ -40,6 +40,10 @@ namespace RUL_Prediction_NN
         public static void CleanExecutionCSV()
         {
             ///this function is to delete executions with incorrect Start or End Date
+
+            var reader = new StreamReader("baseDirectory.txt");
+            base_directory = reader.ReadToEnd();
+            reader.Close();
             
             string path_to_save = base_directory + executions_directory;
 
