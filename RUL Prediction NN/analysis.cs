@@ -48,28 +48,9 @@ namespace RUL_Prediction_NN
             ///This functions is to load the Base Directory string to read and save the results of the Execution of the pogram
             ///it's necesary to have a file: baseDirectory.txt with the base directory, located at:..\source\repos\AutoclaveFailDetection
             
-            var dir = Directory.GetCurrentDirectory();
-            var dir_split = dir.Split('\\');
-
-            var length = dir_split.Length;  
-
-            //var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            //XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
-
-            //a loop to delete the reference to bin\debug\net.6..
-            for (int i = length-1; i >= length-3; i--)
-            {
-
-                dir_split = dir_split.RemoveAt(i);
-            }
-
-            var path = String.Join(@"\", dir_split);
-
-            _log.Info($"path = {path}");
-
             try
             {
-                var reader = new StreamReader( path + @"\baseDirectory.txt");        //Configuracion del objeto de lectura
+                var reader = new StreamReader("baseDirectory.txt");        //Configuracion del objeto de lectura
                 base_directory = reader.ReadToEnd();
                 reader.Close();
             }
@@ -104,7 +85,9 @@ namespace RUL_Prediction_NN
             {
                 var mlContext = new MLContext();
                 IDataView data = mlContext.Data.LoadFromTextFile<Execution>(base_directory + executions_to_filter, separatorChar: ',', hasHeader: true);
-                var df = data.ToDataFrame();
+                var dataList = mlContext.Data.CreateEnumerable<Execution>(data, false);
+
+                var df = data.ToDataFrame(dataList.Count());
                 
 
                 executionsList = DataFrameToList<Execution>(df);

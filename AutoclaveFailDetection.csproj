@@ -22,4 +22,10 @@
     <PackageReference Include="TensorFlow.NET" Version="0.70.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="baseDirectory.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
