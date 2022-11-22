@@ -1,12 +1,18 @@
 close all, clear all, clc
 
-location = 'D:\CGN\projects\AutoclaveFailDeteccion\data\Samples Sorts by Phases\';
+fileID = fopen('baseDirectory.txt','r');
+base_directory = fscanf(fileID,'%c')
+fclose(fileID);
+
+sequence_name = "Prueba de estanco";
+location = base_directory + sequence_name + "\Samples Sorts by Phases\";
+%location = 'D:\CGN\projects\AutoclaveFailDeteccion\data\Samples Sorts by Phases\';
 phase = 'Presurización';
 file = '\Variables\variable';
 extension = '.csv';
 
 
-for i=1:7
+for i=7:13
     
     variable = readmatrix(char(string(location)+string(phase)+string(file)+string(i)+string(extension)));      
     variable = normalize(variable,'range');
@@ -51,7 +57,9 @@ for i=1:7
     end
 
     % Save distances
-    writematrix(distance,char(string(location)+string(phase)+'\distances_variable'+string(i)+string(extension)));
+    path = char(string(location)+string(phase))
+    %mkdir path matlab
+    writematrix(distance,char(string(location)+string(phase)+ '\distances_variable'+string(i)+string(extension)));
 
     
 end
