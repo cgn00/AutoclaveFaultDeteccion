@@ -29,12 +29,21 @@ namespace AutoclaveFailDetection
     {
         static void Main(string[] args)
         {
-
-            //RUL_Prediction_NN.analysis.Run("Presurización");
-            
             RUL_Prediction_NN.analysis.CleanExecutionCSV();
 
             RUL_Prediction_NN.analysis.SplitSequences();
+
+            foreach (var sequence in RUL_Prediction_NN.analysis.sequencesName)
+            {
+                RUL_Prediction_NN.analysis.sequence_directory = RUL_Prediction_NN.analysis.base_directory + sequence + @"\";
+                RUL_Prediction_NN.analysis.phases_by_sequence_directory = sequence + @"_phases.csv";
+                Console.WriteLine(RUL_Prediction_NN.analysis.sequence_directory);
+                Console.WriteLine(RUL_Prediction_NN.analysis.phases_by_sequence_directory);
+
+                //RUL_Prediction_NN.analysis.PreprocessingForClusteringByTimeAndSamplesInPython(); //Run this function before obtain the executions IDs by time and #s of samples
+                RUL_Prediction_NN.analysis.RunAllPhases(); //Run this function after obtain the executions IDs by time and #s of samples
+            }
+
 
             Console.WriteLine("Finish");
             Console.ReadLine();
