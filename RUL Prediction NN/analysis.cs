@@ -1,6 +1,10 @@
 ﻿using Accord.Math;
+<<<<<<< HEAD
 using Microsoft.Data.Analysis;
 using Microsoft.ML;
+=======
+using Accord.Statistics;
+>>>>>>> origin/preprocessing_without_mlnet
 using RUL_Prediction_NN.Data;
 using RUL_Prediction_NN.data_model;
 using System.Data;
@@ -10,22 +14,38 @@ using System.Linq;
 using Tensorflow;
 using Tensorflow.Contexts;
 using Tensorflow.NumPy;
+<<<<<<< HEAD
 using Microsoft.Extensions.Logging;
 using log4net;
 using log4net.Config;
+=======
+using MathNet.Numerics.Statistics;
+using Microsoft.ML;
+
+>>>>>>> origin/preprocessing_without_mlnet
 
 namespace RUL_Prediction_NN
 {
 
     public static class Analysis
     {
+<<<<<<< HEAD
         static List<int> n_variables = new List<int>() {7, 8, 9, 10, 11, 12, 13 }; // 
+=======
+
+        // List of all variables for analysis
+        //static List<int> n_variables = new List<int>() { 12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 };
+
+        static List<int> n_variables = new List<int>() { 7, 8, 9, 10, 11, 12, 13 };
+        public static List<string> sequencesName = new List<string>();
+>>>>>>> origin/preprocessing_without_mlnet
 
         static int index = 0; //variable created to record de index of the serch in the function: GetExecutionByID
 
         private static readonly ILog _log = LogManager.GetLogger(typeof(Analysis));
 
         // Base directory for save and read results of analysis
+<<<<<<< HEAD
         static string base_directory = @"D:\CGN\projects\AutoclaveFailDeteccion\data";
         static readonly string conductivity_directory = @"\Conductivities\";
         static readonly string duration_directory = @"\Durations\";
@@ -39,6 +59,24 @@ namespace RUL_Prediction_NN
         static string? sequence_directory;
         static string? phases_by_sequence_directory;
 
+=======
+        public static string base_directory;
+        public static string conductivity_directory = @"\Conductivities\";
+        public static string duration_directory = @"\Durations\";
+        public static string variables_directory = @"\Variables\";
+        public static string data_directory = @"\Datas\";
+        public static string samples_directory = @"\Samples For Executions Cluster\";
+        public static string phases_directory = @"\Datos\phases_to_analysis.csv";
+        //static string phases_directory = @"\Datos\phases.csv";
+        public static string executions_directory = @"Datos\clean_executions.csv";
+        public static string executions_to_filter = @"Datos\executions.csv";
+        public static string? sequence_directory;
+        public static string? phases_by_sequence_directory;
+        public static string criterion = "both"; //criteron indicate wich criterion is used to seleccionate the correct executions: 
+        //  "time" (selct indixes of executions by the median of the duration of the phase) 
+        //  "number_of_samples" (selct indixes of executions by the median of the number of samples that the phase has)
+        //  "both" (selct indixes of executions by clusters maked y pyhon by numbers of samples and time duration that the phase has)
+>>>>>>> origin/preprocessing_without_mlnet
 
         /*
               Main functions
@@ -68,6 +106,10 @@ namespace RUL_Prediction_NN
         public static void CleanExecutionCSV()
         {
             ///this function is to delete executions with incorrect Start or End Date
+            
+            var reader = new StreamReader("baseDirectory.txt");
+            base_directory = reader.ReadToEnd();
+            reader.Close();
             
             string path_to_save = base_directory + executions_directory;
 
@@ -153,7 +195,6 @@ namespace RUL_Prediction_NN
                 return;
             }
 
-            var sequencesName = new List<string>();
             var executions_id_by_sequences = new List<List<int>>();
 
             foreach(var execution in executions)
@@ -271,15 +312,6 @@ namespace RUL_Prediction_NN
 
             Console.WriteLine("Executions count = {0}", executions.Count);
 
-            foreach(var sequence in sequencesName)
-            {
-                sequence_directory = base_directory + sequence + @"\";
-                phases_by_sequence_directory = sequence + @"_phases.csv";
-                Console.WriteLine(sequence_directory);
-                Console.WriteLine(phases_by_sequence_directory);
-                
-                RunAllPhases();
-            }
         }
 
         public static void RunAllPhases()
@@ -323,36 +355,64 @@ namespace RUL_Prediction_NN
             
         }
 
+        public static void PreprocessingForClusteringByTimeAndSamplesInPython()
+        {
+            var phases = new List<Phase>();
+            try
+            {
+                phases = pd.read_phases(sequence_directory + phases_by_sequence_directory);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return;
+            }
+
+            var phase_name = new List<string>();
+
+            for (int i = 0; i < phases.Count; i++)
+            {
+                var phase = phases[i].Text;
+                bool pass = phase_name.Contains(phase);
+
+                if (!pass)
+                {
+                    phase_name.Add(phases[i].Text);
+                }
+            }
+
+            foreach (string p_name in phase_name)
+            {
+                Console.WriteLine(p_name);
+
+                FirstRun(p_name);
+            }
+            Console.WriteLine("--------------------");
+        }
+
+        private static void FirstRun(string phase_name)
+        {
+            FilterSamplesForPhases(phase_name);
+
+            SavePhaseDuration(phase_name);
+
+            var executions_count_by_numb_samp = SaveCorrectExecutionsByNumberOfSamples(phase_name);
+        }
+
         public static void Run(string phase_name)
         {
 
             /*
              *  Main function
              */
+            try
+            {
+            var executions_count_by_time = SaveCorrectExecutionsByTime(phase_name);
 
-            /*
-
-            // Save all values of conductivities
-            SaveConductivitiesSpecificPhase(phase_name);
-
-            // Save indexes of correct executions according the process
-            DetectCorrectExecutions(phase_name);
-            DetectCorrectExecutions(phase_name);
-
-            // Save values of correct conductivities
-            SaveConductiviesForQuality(phase_name, quality: "good_executions");
-
-            // Save durations of correct conductivities
-            SaveDurationOfSpecificPhase(phase_name);
-            
-            */
-
-            var executions_count = FilterSamplesForPhases(phase_name);
-
-            SavePhaseDuration(phase_name);
-
-            
-            OrganizedSamplesForVariables(phase_name, total_executions: executions_count);
+            var executions_count =  OrganizedSamplesByVariables(phase_name, criter: criterion);
             
             GetDatasForTraining(phase_name, variables: n_variables, n_executions: executions_count);
             GetLabelsForTraining(phase_name, n_executions: executions_count);
@@ -363,7 +423,131 @@ namespace RUL_Prediction_NN
                 Console.WriteLine("Saving Variable {0}" , n_variables[i - 1]);
                 SaveVariable(phase_name, i);
             }
+
+            }catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+        private static int SaveCorrectExecutionsByNumberOfSamples(string phase_name)
+        {
+            ///Delete ExecutionsID with a number of samples out of range median +- std
+
+            string path = sequence_directory + @"Samples Sorts by Phases\" + phase_name;
+            var samplesList = new List<Sample>();
+            var samples_of_one_variable = new List<Sample>();   
+            var indexesToSave = new List<float>();
+            var number_of_samples = new List<double>();
+            var Correct_number_of_Samples = new List<double>();
+            float[] indexes;
+
+            try
+            {
+                indexes = pd.read_csv(path + @"\executions_with_samples.csv", sep: ",", headers: false).Reshape();
+
+                foreach (var index in indexes)
+                {
+                    double tempCount = 0;
+                    string sample_path = path + @"\Samples For Executions Cluster" + @"\executions_" + index + ".csv";
+                    samplesList = pd.read_samples(sample_path, headers: false, sep: ',', partial: true);
+                    foreach (var sample in samplesList) //a loop in the execution in order to determinate how many samples has one execution 
+                    {
+                        if (sample.VariableId == 7) //asking for one variable, all the variables most have the same number of samples
+                        {
+                            tempCount++;
+                        }
+                    }
+                    number_of_samples.Add(tempCount);
+                }
+
+                var median = number_of_samples.ToArray().Median();
+                var std = number_of_samples.ToArray().StandardDeviation();
+
+                var limitSuper = median + std;
+                var limitInf = median - std;
+
+                var length = indexes.Length;
+
+                for (int i = 0; i < length; i++)
+                {
+                    if(number_of_samples[i] > limitInf && number_of_samples[i] < limitSuper)
+                    {
+                        indexesToSave.Add(indexes[i]);
+                        Correct_number_of_Samples.Add(number_of_samples[i]);
+
+                    }
+                }
+                pd.to_csv(path + duration_directory + "NumberOfSamplesBeforeClean.csv", columns: number_of_samples.ToArray().Transpose(), append: false,type: TypeCode.Double);
+                pd.to_csv(path + duration_directory + "CorrectNumberOfSamples.csv", columns: Correct_number_of_Samples.ToArray().Transpose(), append: false, type: TypeCode.Double);
+                pd.to_csv(path + @"\CorrectExecutionsByNumberOfSamples.csv", columns: indexesToSave.ToArray().Transpose(), append: false);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return 0;
+            }
             
+
+            return indexesToSave.Count;
+        }
+        private static int SaveCorrectExecutionsByTime(string phase_name)
+        {
+            ///Delete ExecutionsID with a duration out of range median +- std
+
+            string path = sequence_directory + @"Samples Sorts by Phases\" + phase_name;
+            float[] durations;
+            float[] indexes;
+            var indexesToSave = new List<float>();
+            var durationsToSave = new List<float>();
+
+            try
+            {
+                durations = pd.read_csv(path + duration_directory + "durations.csv", sep: ",", headers: false).Reshape();
+                indexes = pd.read_csv(path + @"\executions_with_samples.csv", sep: ",", headers: false).Reshape();
+            }
+
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return 0;
+            }
+
+            var median = durations.Median();
+
+            var std = durations.StandardDeviation();
+
+            var limitSuper = median + std;
+            var limitInf = median - std;
+
+            var length = durations.Length;
+
+            for(int i = 0; i < length; i++)
+            {
+                if(durations[i] > limitInf && durations[i] < limitSuper)
+                {
+                    indexesToSave.Add(indexes[i]);
+                    durationsToSave.Add(durations[i]);
+                }
+            }
+
+            try
+            {
+                //var toSave = np.array(durations);
+                pd.to_csv(path + duration_directory + "CorrectDurations.csv", columns:durationsToSave.ToArray().Transpose(), append: false);
+                pd.to_csv(path + @"\CorrectExecutionsByTimeDuration.csv", columns:indexesToSave.ToArray().Transpose(), append: false);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Press to exit...");
+                Console.ReadKey();
+                return 0;
+            }
+            return indexesToSave.Count;
         }
 
         //private static void filterPhaseName(string dir)
@@ -382,7 +566,7 @@ namespace RUL_Prediction_NN
         //        Console.ReadKey();
         //        return;
         //    }
-            
+
         //    for(int i = 0; i < phases.Count; i++)
         //    {
         //        if(phases[i].Text.Equals("\"Esterilización \""))
@@ -394,7 +578,7 @@ namespace RUL_Prediction_NN
         //            phases[i].Text = "LLenado";
         //        }
         //    }
-            
+
         //    try
         //    {
         //        string direc = base_directory + @"Datos\phases_to_analysis.csv";
@@ -403,7 +587,7 @@ namespace RUL_Prediction_NN
         //        var execution = new List<string>();
         //        var time = new List<string>();
         //        var text = new List<string>();
-                
+
         //        for (int i = 0; i < phases.Count; i++)
         //        {
         //            entity.Add(phases[i].EntityId.ToString());
@@ -420,11 +604,11 @@ namespace RUL_Prediction_NN
         //            arrays[i][1] = phases[i].ExecutionId.ToString();
         //            arrays[i][2] = phases[i].Time.ToString();
         //            arrays[i][3] = phases[i].Text;
-                    
+
         //        }*/
 
         //        string[][] arrays = new string[][] { entity.ToArray(), execution.ToArray(), time.ToArray(), text.ToArray() };
-                
+
         //        var transp = arrays.Transpose();
         //        var phases_to_save = np.array(transp.ToMatrix(transpose:false));
 
@@ -439,7 +623,7 @@ namespace RUL_Prediction_NN
         //        Console.ReadKey();
         //        return;
         //    }
-            
+
         //}
 
 
@@ -899,8 +1083,6 @@ namespace RUL_Prediction_NN
                 return 0;
             }
             
-
-
             // Read all samples
             var samples = new List<Sample>();
           
@@ -915,15 +1097,6 @@ namespace RUL_Prediction_NN
                 Console.WriteLine("Press to exit...");
                 Console.ReadKey();
                 return 0;
-            }
-
-            // aparecen id: 17...23 q corresponden del 7..13
-            for(int i = 0; i < samples.Count; i++)
-            {
-                if(!n_variables.Contains(samples[i].VariableId))
-                {
-                    samples[i].VariableId -= 10;
-                }
             }
 
             // Get limits times of executions of specific phase
@@ -1012,9 +1185,8 @@ namespace RUL_Prediction_NN
             }
             */
 
-            // Get samples of phases for determinates intervals of times
+            // Get samples of phases to determinates intervals of times
             var sam = GetSamplesDividedByPhasesAndVariable(samples, phase_name);
-
 
             // Save samples
             //float[,] indexes;
@@ -1060,32 +1232,34 @@ namespace RUL_Prediction_NN
 
         }
 
-        static void OrganizedSamplesForVariables(string phase_name, int total_executions)
+
+        /// <summary>
+        /// Divide samples of executions per variables Saving on independent csv files
+        /// </summary>
+        /// <param name="phase_name"></param>
+        /// <param name="total_executions"> total_executions indicate the number of good executions</param>
+        /// <param name="criter"> criter indicate wich criterion is used to seleccionate the correct executions: 
+        //  "time" (selct indixes of executions by the median of the duration of the phase) 
+        //  "number_of_samples" (selct indixes of executions by the median of the number of samples that the phase has)
+        //  "both" (selct indixes of executions by clusters maked y pyhon by numbers of samples and time duration that the phase has)
+        //  return the number of executions based on the citerion to select them
+        //</param>
+        static int OrganizedSamplesByVariables(string phase_name,  string criter = "time")
         {
 
-            /*
-             *  Divide samples of executions per variables
-             *  Saving on independent csv files
-             *  
-             *  total_executions indicate the number of good executions
-             */
-
-
-
-            if (total_executions == 0)
-            {
-                Console.WriteLine("There isn't any executions");
-                return;
-            }
-
-            var index = total_executions;
             var directory = sequence_directory + @"Samples Sorts by Phases\" + phase_name + samples_directory;
 
             var indexes = new List<float>();
 
             try
             {
-                string path = sequence_directory + @"Samples Sorts by Phases\" + phase_name + @"\executions_with_samples.csv";
+                string path = criter switch
+                {
+                    "time" => sequence_directory + @"Samples Sorts by Phases\" + phase_name + @"\CorrectExecutionsByTimeDuration.csv",
+                    "number_of_samples" => sequence_directory + @"Samples Sorts by Phases\" + phase_name + @"\CorrectExecutionsByNumberOfSamples.csv",
+                    "both" => sequence_directory + @"Samples Sorts by Phases\" + phase_name + @"\CorrectExecutionsByTimeAndSamples.csv",
+                    _ => throw new Exception("Was pased an Incorrect citerion to seleccionate the correct execution, only support: 'time', 'number_of_samples' and 'both'"),
+                };
                 indexes = pd.read_csv(path).Reshape().ToList();
             }
             catch (Exception e)
@@ -1093,14 +1267,20 @@ namespace RUL_Prediction_NN
                 Console.WriteLine(e.Message);
                 Console.WriteLine("Press to exit...");
                 Console.ReadKey();
-                return;
+                return 0;
+            }
+            int total_executions = indexes.Count;
+
+            if (total_executions == 0)
+            {
+                Console.WriteLine("There isn't any executions");
+                return 0;
             }
 
-            for (int i = 1; i < index + 1; i++)
+            for (int i = 1; i < total_executions + 1; i++)
             {
                 //Console.WriteLine(i);
                 var sample = new List<Sample>();
-
 
                 try
                 {
@@ -1112,7 +1292,7 @@ namespace RUL_Prediction_NN
                     Console.WriteLine(e.Message);
                     Console.WriteLine("Press to exit...");
                     Console.ReadKey();
-                    return;
+                    return 0;
                 }
 
 
@@ -1122,7 +1302,7 @@ namespace RUL_Prediction_NN
             }
 
             Console.WriteLine("Samples of executions are saved!");
-
+            return total_executions;
         }
 
         static void SaveVariable(string phase, int var)
@@ -1198,13 +1378,18 @@ namespace RUL_Prediction_NN
          *  Datasource
          */
 
-
         static void GetDatasForTraining(string phase_name, List<int> variables, int n_executions)
         {
 
             /*
              *  Build datasource for selected variables
              */
+
+            if(n_executions == 0)
+            {
+                throw new Exception("There isn't any executions IDs in the criteria");
+                return;
+            }
 
             if (File.Exists(sequence_directory + @"Samples Sorts by Phases\" + phase_name + data_directory + "data.csv"))
             {
@@ -1246,56 +1431,17 @@ namespace RUL_Prediction_NN
                         data_temp.Add(DoubleRange(1.0, (double)temp_samples.Count).ToArray());
                     }
 
+                    var temp = new List<double>();
 
-                    if (v != 21 && v != 30 && v != 31)
+                    foreach (var t in temp_samples)
                     {
-
-                        var temp = new List<double>();
-
-                        foreach (var t in temp_samples)
-                        {
-                            temp.Add(t.Value);
-                        }
-
-                        data_temp.Add(temp.ToArray());
+                        temp.Add(t.Value);
                     }
 
-                    // Correct number of samples by frecuency sample
-                    else
-                    {
-
-                        var temp = new List<double>();
-
-                        for (int j = 0; j < temp_samples.Count; j++)
-                        {
-                            if (j % 5 == 0)
-                            {
-                                temp.Add(temp_samples[j].Value);
-                            }
-                        }
-
-
-                        // Correct data add or substract sample
-                        if (temp.Count < data_temp[0].Length)
-                        {
-                            temp.Add(temp[temp.Count - 1]);
-                        }
-
-                        else if (temp.Count > data_temp[0].Length)
-                        {
-                            temp.RemoveAt(temp.Count - 1);
-                        }
-
-                        data_temp.Add(temp.ToArray());
-
-
-                    }
-
-
+                    data_temp.Add(temp.ToArray());
+                   
                 }
-
                 datas.add(np.array(data_temp.ToArray().ToMatrix(true)));
-                
             }
 
             var data_set = np.concatenate(datas.ToArray());
@@ -1321,9 +1467,6 @@ namespace RUL_Prediction_NN
                 return;
             }
 
-
-
-
         }
 
         static void GetLabelsForTraining(string phase_name, int n_executions)
@@ -1333,6 +1476,12 @@ namespace RUL_Prediction_NN
              *  Labeled data for training neural network
              *  Linear function with remaining time for execution finish
              */
+
+            if (n_executions == 0)
+            {
+                throw new Exception("There isn't any executions IDs in the criteria");
+                return;
+            }
 
             if (File.Exists(sequence_directory + @"Samples Sorts by Phases\" + phase_name + data_directory + "label.csv"))
             {
@@ -1558,7 +1707,7 @@ namespace RUL_Prediction_NN
             /*
              *  Get samples divided for phases and variables
              *  
-             *  variables_id indicate if divide samples for all or specific variables
+             *  variables_id indicate if divide samples for all or a specific variable
              */
 
             var divided_samples = new List<List<Sample>>();
@@ -1592,8 +1741,6 @@ namespace RUL_Prediction_NN
                     }
 
                     */
-
-                    
                     // For all variables
                     if (variable_id == 0)
                     {
@@ -1628,7 +1775,6 @@ namespace RUL_Prediction_NN
 
             var directory = sequence_directory + @"Samples Sorts by Phases\" + phase_name ;
             var to_save = executions_with_samples.ToArray().Transpose();
-
 
             if (!File.Exists(directory + @"\executions_with_samples.csv"))
             {
@@ -1666,14 +1812,20 @@ namespace RUL_Prediction_NN
 
             foreach (var i in n_variables)
             {
-                var temp = DivideSamplesForVariables(samples, i);      //return a list of samples of one variable 
-
-                if (temp.Count != 0)
+                try
                 {
-                    //var temp_sorts_samples = SortAscendingTimeSeries(temp);  // sort chronologically the time serie 
-                    variables_with_samples.Add(temp);
+                    var temp = DivideSamplesForVariables(samples, i);      //return a list of samples of one variable 
+                    if (temp.Count != 0)
+                    {
+                        //var temp_sorts_samples = SortAscendingTimeSeries(temp);  // sort chronologically the time serie 
+                        variables_with_samples.Add(temp);
+                    }
                 }
-
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+                
             }
 
             foreach (var s in variables_with_samples)
@@ -1690,9 +1842,7 @@ namespace RUL_Prediction_NN
                     Console.ReadKey();
                     return;
                 }
-
             }
-
         }
 
         private static List<Sample> SortAscendingTimeSeries(List<Sample> samples)
@@ -1719,10 +1869,13 @@ namespace RUL_Prediction_NN
                 }
 
             }
+            if(temp.Count != 0)
+                return temp;
 
-            return temp;
+            throw new Exception($"Variable ID: {variableId} hasn't any sample");
         }
 
+<<<<<<< HEAD
         private static List<T> DataFrameToList<T>(DataFrame df)
         {
             ///Function to convert a Data Frame into a List
@@ -1753,10 +1906,11 @@ namespace RUL_Prediction_NN
             return obj;
         }
 
+=======
+>>>>>>> origin/preprocessing_without_mlnet
         /*
          *  Extensions
          */
-
 
         static IEnumerable<double> DoubleRange(double min, double max)
         {
