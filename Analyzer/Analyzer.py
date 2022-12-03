@@ -31,6 +31,11 @@ class ExecutionsAnalyzer:
             
             
     def LoadBaseDirectory(self, path):
+        """Change the base directory where will be loaded and saved the data 
+
+        Args:
+            path (str): path is the new base directory
+        """
         self._base_directory = path
     
     def RemoveIncorrectTime(self):
