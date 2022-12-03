@@ -5,9 +5,9 @@ import sys
 #from Analyzer import ExecutionsAnalyzer as ExecAnaly
 import Analyzer
 
-var = os.getcwd()
+path = os.getcwd().removesuffix('Analyzer') + "baseDirectory.txt"
 
-base_direct = pd.read_csv("baseDirectory.txt", header=None).iloc[0].values[0]
+base_direct = pd.read_csv(path, header=None).iloc[0].values[0]
 
 analyzer = Analyzer.ExecutionsAnalyzer(base_direct)
 
