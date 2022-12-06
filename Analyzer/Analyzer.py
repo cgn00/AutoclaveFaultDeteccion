@@ -5,7 +5,7 @@ import os
 
 class ExecutionsAnalyzer:
     
-    """This class is to explore the executions, agrupate all the executions of a given phase...
+    """This class is to explore the executions, agrupate all the executions by a given phase...
     """
     
     def __init__(self, path):
@@ -17,7 +17,7 @@ class ExecutionsAnalyzer:
         self._phases_directory = "Datos\\phases_to_analysis.csv"
         self._executions_directory = "Datos\\clean_executions.csv"
         self._executions_to_filter = "Datos\\executions.csv"
-        self._data_analysis = 'Data_Analysis\\'
+        self._data_analysis = 'Data_Analysis'
         self._criterion = "both"
         self._sequence_directory = ""
         self._phases_by_sequence_directory = ""
@@ -31,7 +31,7 @@ class ExecutionsAnalyzer:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self._logger.addHandler(handler)
-        self._logger.info("------------------------------")
+        self._logger.info("--------------------New Execution of the code-------------------")
             
             
     def LoadBaseDirectory(self, path):
@@ -100,51 +100,34 @@ class ExecutionsAnalyzer:
         phases_ids_containeds = list()
         
         for sequence in self._sequences_names: #itetate on each sequence to assing the executions that belong to each one
+            
+            folder_to_save = os.path.join(self._base_directory, self._data_analysis, sequence)
+            if(os.path.exists(folder_to_save) == False):
+                 os.makedirs(folder_to_save)
+            
+            path_to_save = os.path.join(folder_to_save, f"{sequence}_phases.csv") #path where will be saved the phases that belong to the current sequence
+            
             temp_ids = executions.apply(lambda row: row['ExecutionId'] if row['SequenceName'] == sequence else np.nan
                                         , axis=1) #iterate over rows to assing the Executions IDs that belong to that sequence
             
             temp_ids.dropna(inplace=True) # delete the NaN and keep the IDs, this IDs will be used to find the Phases of this sequence
             temp_ids = temp_ids.to_numpy()
-            
-            #phases_ids_containeds.append(temp_ids)
-            
+                    
             for id in temp_ids:
-                 phases_ids_containeds.append(id)
-            
-            #temp_phases = pd.DataFrame(columns=phases.columns)
-            ''' 
-            temp_phases = phases.apply(lambda row: row if row['ExecutionId'] in temp_ids else np.nan
-                                       , axis=1) #if the ID of the row it's in temp_ids then the phase is added to this sequence
-            
-            temp_phases.dropna(inplace=True)# delete the NaN and keep the Phases
-            '''
+                 phases_ids_containeds.append(id) #saving the Ids of the phases that belong to the present sequence to the list where are saved 
+                                                  #the Ids of the phases in each sequence
+                        
             temp_phases = phases[phases['ExecutionId'].isin(temp_ids)]
-            
-            #phases_by_sequence.append(temp_phases)
-            '''
-            phases_not_contained = phases_not_contained.apply(
-                lambda row :row if not row['ExecutionId'] in temp_ids else np.nan
-                , axis=1) #assing NaN to  the Phases that are included in the Sequence
-            
-            phases_not_contained.to_frame()
-            
-            phases_not_contained.dropna(inplace=True)
-            '''
-            
-            folder_to_save = self._base_directory + self._data_analysis + sequence  
-            if( os.path.exists(folder_to_save) == False):
-                 os.makedirs(folder_to_save)
-            
-            path_to_save = folder_to_save + '\\' + sequence + '_phases.csv'
-            temp_phases.to_csv(path_to_save, index=False, header=phases.columns)
-            
-            #exec_ids_by_sequence.append(temp_ids)
+                              
+            temp_phases.to_csv(path_to_save, index=False, header=phases.columns) #saving the phases that belong to each sequence
             
         
-        #phases_ids_containeds = np.array(phases_ids_containeds).reshape([1,phases_ids_containeds.__len__()])
-        index = phases['ExecutionId'].isin(phases_ids_containeds)
-        index_negate = index.apply(lambda row: not row)
-        phases_not_contained = phases[index_negate]
+        index_phases_containeds = phases['ExecutionId'].isin(phases_ids_containeds)
+        index_phases_not_containeds = index_phases_containeds.apply(lambda row: not row)
+        phases_not_contained = phases[index_phases_not_containeds]
+        
+        path = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained.csv')
+        phases_not_contained.to_csv(path, index=False, header=True)
         
     
         
