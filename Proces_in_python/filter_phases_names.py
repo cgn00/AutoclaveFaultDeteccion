@@ -8,8 +8,6 @@ print(data)
 
 rows = len(data.axes[0])
 
-
-
 count = 0
 
 text_List = []
@@ -41,6 +39,6 @@ for i in range(1, rows, 1):
 
 df = pd.DataFrame(data=text_List)
 df.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_names.csv")
-#data.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_to_analysis.csv", columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
+data.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_to_analysis.csv", columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
 
 
