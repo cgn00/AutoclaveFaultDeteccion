@@ -133,11 +133,7 @@ class ExecutionsAnalyzer:
         phases = pd.read_csv(phases_path)
         
         self._sequences_names = executions.loc[:, 'SequenceName'].drop_duplicates() #obtain the names of each sequence in the executions
-        
-        exec_ids_by_sequence = list() #IDs of each execution gruped by sequences
-        phases_by_sequence = list() 
-        
-        #phases_not_contained = phases #initialy all the phases aren't contained, but if the belog to one sequence the are removed
+                
         phases_ids_contained = list()
         
         for sequence in self._sequences_names: #itetate on each sequence to assing the executions that belong to each one
