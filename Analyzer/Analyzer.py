@@ -14,6 +14,7 @@ class ExecutionsAnalyzer:
         self._variables_directory = "\\Variables\\"
         self._data_directory = "\\Datas\\"
         self._samples_directory = "\\Samples For Executions Cluster\\"
+        self._phases_with_mistakes_in_name = 'Datos\\phases.csv'    # the phases: Esterilizacion an Llenado appear with difirents mistakes in the name
         self._phases_directory = "Datos\\phases_to_analysis.csv"
         self._executions_directory = "Datos\\clean_executions.csv"
         self._executions_to_filter = "Datos\\executions.csv"
@@ -43,6 +44,46 @@ class ExecutionsAnalyzer:
         self._base_directory = path
     
     
+    def CleanPhasesNamesMistakes(self):
+        """This function renames the phases:
+        'Esterilización ' to 'Esterilización' (whitout space) and
+        'LLenado' to 'Llenado'
+        """
+        path = os.path.join(self._base_directory, self._phases_with_mistakes_in_name)
+        
+        data = pd.read_csv(path, sep=",")
+
+        rows = len(data.axes[0])
+
+        count = 0
+
+        text_List = []
+
+        for i in range(1, rows, 1):
+            if(text_List.__contains__(data.loc[i, "Text"])== False):
+                text_List.append(data.loc[i, "Text"])
+
+        text = 'Esterilización '
+
+        for i in range(1, rows, 1):
+
+            if data.loc[i, "Text"] == text :
+                data.loc[i, "Text"] = "Esterilización"
+                count += 1
+
+            elif data.loc[i, "Text"] == "LLenado" :
+                data.loc[i, "Text"] = "Llenado"
+
+        text_List.clear()
+        for i in range(1, rows, 1):
+            if(text_List.__contains__(data.loc[i, "Text"])== False):
+                text_List.append(data.loc[i, "Text"])
+
+        df = pd.DataFrame(data=text_List)
+        #df.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_names.csv", index=True, header=True)
+        data.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_to_analysis.csv", columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
+
+
     def RemoveIncorrectTime(self):
         """
         This function remove executions with incorrect Start or End Time.
@@ -97,7 +138,7 @@ class ExecutionsAnalyzer:
         phases_by_sequence = list() 
         
         #phases_not_contained = phases #initialy all the phases aren't contained, but if the belog to one sequence the are removed
-        phases_ids_containeds = list()
+        phases_ids_contained = list()
         
         for sequence in self._sequences_names: #itetate on each sequence to assing the executions that belong to each one
             
@@ -114,7 +155,7 @@ class ExecutionsAnalyzer:
             temp_ids = temp_ids.to_numpy()
                     
             for id in temp_ids:
-                 phases_ids_containeds.append(id) #saving the Ids of the phases that belong to the present sequence to the list where are saved 
+                 phases_ids_contained.append(id) #saving the Ids of the phases that belong to the present sequence to the list where are saved 
                                                   #the Ids of the phases in each sequence
                         
             temp_phases = phases[phases['ExecutionId'].isin(temp_ids)]
@@ -122,11 +163,11 @@ class ExecutionsAnalyzer:
             temp_phases.to_csv(path_to_save, index=False, header=phases.columns) #saving the phases that belong to each sequence
             
         
-        index_phases_containeds = phases['ExecutionId'].isin(phases_ids_containeds)
+        index_phases_containeds = phases['ExecutionId'].isin(phases_ids_contained)
         index_phases_not_containeds = index_phases_containeds.apply(lambda row: not row)
         phases_not_contained = phases[index_phases_not_containeds]
         
-        path = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained.csv')
+        path = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
         phases_not_contained.to_csv(path, index=False, header=True)
         
     

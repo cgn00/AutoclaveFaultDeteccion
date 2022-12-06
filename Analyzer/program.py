@@ -11,6 +11,8 @@ try:
     base_direct = pd.read_csv(path, header=None).iloc[0].values[0]
 
     analyzer = Analyzer.ExecutionsAnalyzer(base_direct)
+    
+    analyzer.CleanPhasesNamesMistakes()
 
     analyzer.RemoveIncorrectTime() 
 
