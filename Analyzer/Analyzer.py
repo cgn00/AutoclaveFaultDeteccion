@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import logging
 import os
+import json
 
 class ExecutionsAnalyzer:
     
@@ -22,6 +23,7 @@ class ExecutionsAnalyzer:
         self._criterion = "both"
         self._sequence_directory = ""
         self._phases_by_sequence_directory = ""
+        self._phase_configuration = ''
         
         self._sequences_names = list()
         
@@ -81,7 +83,8 @@ class ExecutionsAnalyzer:
 
         df = pd.DataFrame(data=text_List)
         #df.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_names.csv", index=True, header=True)
-        data.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_to_analysis.csv", columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
+        path = os.path.join(self._base_directory, self._phases_directory)
+        data.to_csv(path, columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
 
 
     def RemoveIncorrectTime(self):
@@ -117,7 +120,7 @@ class ExecutionsAnalyzer:
         
         correct_exc.to_csv(path_to_save, header=True, index=False)
         
-        self._logger.warning(f"Executions.Count = {len(executions)} \nCorrect_executions.count = {len(correct_exc)}")
+        self._logger.info(f"Executions.Count = {len(executions)} \nCorrect_executions.count = {len(correct_exc)}")
 
 
     def SplitSequences(self):
@@ -125,6 +128,10 @@ class ExecutionsAnalyzer:
         generate N folders named as the correspondent sequence
         and inside generate a csv that contains the executions of that sequence 
         """
+        path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
+        if(os.path.exists(path_phases_not_contained_in_any_sequence)):
+            self._logger.info("The executions are allready splited by sequence")
+            return
         
         executions_path = os.path.join(self._base_directory, self._executions_to_filter)
         phases_path = os.path.join(self._base_directory, self._phases_directory)
@@ -163,10 +170,15 @@ class ExecutionsAnalyzer:
         index_phases_not_containeds = index_phases_containeds.apply(lambda row: not row)
         phases_not_contained = phases[index_phases_not_containeds]
         
-        path = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
-        phases_not_contained.to_csv(path, index=False, header=True)
+        phases_not_contained.to_csv(path_phases_not_contained_in_any_sequence, index=False, header=True)
         
     
-        
+    def SaveCorrectExecutionsByTime(self, phase_name):
+        """
+
+        Args:
+            phase_name (str): the name of the phase
+        """
+            
         
         
