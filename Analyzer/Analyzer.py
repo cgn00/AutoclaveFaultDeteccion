@@ -37,7 +37,7 @@ class ExecutionsAnalyzer:
         self._logger.info("--------------------New Execution of the code-------------------")
             
             
-    def LoadBaseDirectory(self, path):
+    def load_base_directory(self, path):
         """Change the base directory where will be loaded and saved the data 
 
         Args:
@@ -46,7 +46,7 @@ class ExecutionsAnalyzer:
         self._base_directory = path
     
     
-    def CleanPhasesNamesMistakes(self):
+    def clean_phases_names_mistakes(self):
         """This function renames the phases:
         'Esterilización ' to 'Esterilización' (whitout space) and
         'LLenado' to 'Llenado'
@@ -87,7 +87,7 @@ class ExecutionsAnalyzer:
         data.to_csv(path, columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
 
 
-    def RemoveIncorrectTime(self):
+    def remove_incorrect_time(self):
         """
         This function remove executions with incorrect Start or End Time.
         The Start Time can't happen after the End Time
@@ -123,7 +123,7 @@ class ExecutionsAnalyzer:
         self._logger.info(f"Executions.Count = {len(executions)} \nCorrect_executions.count = {len(correct_exc)}")
 
 
-    def SplitSequences(self):
+    def split_sequences(self):
         """Split the Executions to the correspondent sequence,
         generate N folders named as the correspondent sequence
         and inside generate a csv that contains the executions of that sequence 
@@ -173,7 +173,7 @@ class ExecutionsAnalyzer:
         phases_not_contained.to_csv(path_phases_not_contained_in_any_sequence, index=False, header=True)
         
     
-    def SaveCorrectExecutionsByTime(self, phase_name):
+    def save_correct_executions_by_time(self, phase_name):
         """
 
         Args:
