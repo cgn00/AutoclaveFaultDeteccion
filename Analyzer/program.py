@@ -13,13 +13,13 @@ try:
 
     analyzer = Analyzer.ExecutionsAnalyzer(base_direct)
     
-    analyzer.CleanPhasesNamesMistakes()
+    analyzer.clean_phases_names_mistakes()
 
-    analyzer.RemoveIncorrectTime() 
+    analyzer.remove_incorrect_time() 
 
-    analyzer.SplitSequences()
+    analyzer.split_sequences()
     
-    print(phase["Name"])
+
 
 except Exception as err :
     print(f"Unexpected {err=}, {type(err)=}")
