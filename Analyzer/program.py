@@ -23,9 +23,7 @@ try:
         analyzer._sequence_directory = os.path.join(analyzer._base_directory, sequence, "\\")
         analyzer._phases_by_sequence_directory = os.path.join(sequence, "_phases.csv")
         
-    
-
-
+        
 except Exception as err :
     print(f"Unexpected {err=}, {type(err)=}")
     raise

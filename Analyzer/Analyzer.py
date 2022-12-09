@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime
 import logging
 import os
 import json
@@ -22,6 +23,7 @@ class ExecutionsAnalyzer:
         self._executions_to_filter = "Datos\\executions.csv"
         self._data_analysis = 'Data_Analysis'
         self._criterion = "both"
+        self._date_time_format = "%Y-%m-%d %H:%M:%S.%f"
         self._sequence_directory = ""
         self._phases_by_sequence_directory = ""
         self._phase_configuration = []
@@ -165,9 +167,37 @@ class ExecutionsAnalyzer:
                         
             temp_phases = phases[phases['ExecutionId'].isin(temp_ids)]
             
-            temp_phases
-                              
-            temp_phases.to_csv(path_to_save, index=False, header=phases.columns) #saving the phases that belong to each sequence
+            #end_time = temp_phases_copy['Time']
+            end_time_column = temp_phases.iloc[1:temp_phases.__len__(), 2] #obtain from row 1 to end all the times
+                                                                    #this dataframe is to obtain the start time of the next phase that will be the end time 
+                                                                    #of the actual phase if they belong to the same Execution ID, else the EndTime of the Execution is
+                                                                    #the End time of the phase
+            end_time_column = end_time_column.reset_index()
+            end_time_column = end_time_column['Time'].to_numpy()
+            last_execution_id = temp_ids[temp_ids.__len__() - 1] #the id of the last execution of the sequence
+            last_execution_end_time = executions.loc[executions['ExecutionId'] == last_execution_id, 'EndTime'] # the end time of the last execution
+            
+            
+            end_time_column = np.append(end_time_column, last_execution_end_time)
+            
+            temp_phases.insert(3, column="EndTime", value=end_time_column)
+            
+            '''
+            b = executions.loc[executions['ExecutionId'] == 1, 'EndTime'].item()
+            print(b)
+            a = temp_phases.loc[0, 'EndTime']
+            pas = a > b
+            
+            date_str = temp_phases.loc[0, 'EndTime']
+                                                                                                 
+            print(datetime.strptime(date_str, self._date_time_format))
+            '''
+            
+            temp_phases['EndTime'] = temp_phases.apply(lambda row: row['EndTime'] if datetime.strptime(row['EndTime'], self._date_time_format) < datetime.strptime(executions.loc[executions['ExecutionId'] == row['ExecutionId'], 'EndTime'].item(), self._date_time_format) 
+                                                                                 else executions.loc[executions['ExecutionId'] == row['ExecutionId'], 'EndTime'].item()
+                                                                                 , axis=1) #adding the correct end time column 
+                                        
+            temp_phases.to_csv(path_to_save, index=False, header=['EntityId', 'ExecutionId', 'StartTime', 'EndTime', 'Text']) #saving the phases that belong to each sequence
             
         
         index_phases_containeds = phases['ExecutionId'].isin(phases_ids_contained)
