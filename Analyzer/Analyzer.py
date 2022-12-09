@@ -4,9 +4,9 @@ from datetime import datetime
 import logging
 import os
 import json
-from phase_configuration import phase_conf 
+from configuration import phase_conf as conf
 
-class ExecutionsAnalyzer:
+class executions_analyzer:
     
     """This class is to explore the executions, agrupate all the executions by a given phase...
     """
@@ -22,13 +22,17 @@ class ExecutionsAnalyzer:
         self._executions_directory = "Datos\\clean_executions.csv"
         self._executions_to_filter = "Datos\\executions.csv"
         self._data_analysis = 'Data_Analysis'
+        self._phase_configuration_directory = 'Analyzer\\configuration\\phase_configuration.json'
         self._criterion = "both"
         self._date_time_format = "%Y-%m-%d %H:%M:%S.%f"
-        self._sequence_directory = ""
-        self._phases_by_sequence_directory = ""
-        self._phase_configuration = []
-        
-        
+        self._sequence_directory = ''
+        self._phases_by_sequence_directory = ''
+                
+        route = os.path.join(self._base_directory, self._phase_configuration_directory)
+        #self._phase_config = json.load(open(route)) #load the Phase Configuration saved as .json
+        dic = json.load(open(route))
+        self._phases_config = conf.phases_config(dic)
+                
         self._sequences_names = list()
         
         #logger config
@@ -55,6 +59,11 @@ class ExecutionsAnalyzer:
         'Esterilización ' to 'Esterilización' (whitout space) and
         'LLenado' to 'Llenado'
         """
+        path_to_save = os.path.join(self._base_directory, self._phases_directory)
+        if(os.path.exists):
+            self._logger.info("phases_to_analysis.csv allready exists, nothing to to in clean_phases_names_mistakes()")
+            return
+        
         path = os.path.join(self._base_directory, self._phases_with_mistakes_in_name)
         
         data = pd.read_csv(path, sep=",")
@@ -87,7 +96,7 @@ class ExecutionsAnalyzer:
 
         df = pd.DataFrame(data=text_List)
         #df.to_csv("D:\\CGN\\projects\\AutoclaveFailDeteccion\\data\\Datos\\phases_names.csv", index=True, header=True)
-        path = os.path.join(self._base_directory, self._phases_directory)
+        
         data.to_csv(path, columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
 
 
@@ -131,10 +140,11 @@ class ExecutionsAnalyzer:
         """Split the Executions to the correspondent sequence,
         generate N folders named as the correspondent sequence
         and inside generate a csv that contains the executions of that sequence 
+        Also when save the (sequence_name)_phases.csv create a new column End Date that contains the End Time of the phase
         """
         path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
         if(os.path.exists(path_phases_not_contained_in_any_sequence)):
-            self._logger.info("The executions are allready splited by sequence")
+            self._logger.info("The executions are allready splited by sequence, nothing to do in execution_analyzer.split_sequences()")
             return
         
         executions_path = os.path.join(self._base_directory, self._executions_to_filter)
@@ -207,13 +217,16 @@ class ExecutionsAnalyzer:
         phases_not_contained.to_csv(path_phases_not_contained_in_any_sequence, index=False, header=True)
         
     
-    def save_correct_executions_by_time(self, phase_name):
+    def filter_samples_by_phases(self, phase_conf):
         """
 
         Args:
-            phase_name (str): the name of the phase
+            phase_conf (obj): the conf of the phase
         """
-        pass
+        samples = pd.read_csv(os.path(self._base_directory, self._samples_directory))
+        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
+        
+        
             
         
         

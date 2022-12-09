@@ -11,7 +11,7 @@ try:
 
     base_direct = pd.read_csv(path, header=None).iloc[0].values[0] #reading the base deirectory where is allocated the Data
 
-    analyzer = Analyzer.ExecutionsAnalyzer(base_direct)
+    analyzer = Analyzer.executions_analyzer(base_direct)
     
     analyzer.clean_phases_names_mistakes()
 
@@ -22,6 +22,10 @@ try:
     for sequence in analyzer._sequences_names:
         analyzer._sequence_directory = os.path.join(analyzer._base_directory, sequence, "\\")
         analyzer._phases_by_sequence_directory = os.path.join(sequence, "_phases.csv")
+    
+   
+    
+    print(analyzer._phases_config)
         
         
 except Exception as err :
