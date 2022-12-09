@@ -8,7 +8,7 @@ class one_phase_config:
         self._time_duration = phase_conf['selection_criteria']['time_duration']
 
 class sequence_config:
-    """This class is an array of one_phas_conf
+    """This class is a list with the phases config of one sequence
     """
     def __init__(self, sequence_conf):
         self._sequence_name = sequence_conf['sequence_name']
