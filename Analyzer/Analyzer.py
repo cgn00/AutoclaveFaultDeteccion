@@ -11,6 +11,8 @@ class executions_analyzer:
     """This class is to explore the executions, agrupate all the executions by a given phase...
     """
     
+    #construct:
+    
     def __init__(self, path):
         self._base_directory = path 
         self._duration_directory = '\\Durations\\'
@@ -28,14 +30,33 @@ class executions_analyzer:
         self._sequence_directory = ''
         self._phases_by_sequence_directory = ''
                 
-        route = os.path.join(self._base_directory, self._phase_configuration_directory)
-        #self._phase_config = json.load(open(route)) #load the Phase Configuration saved as .json
-        dic = json.load(open(route))
-        self._phases_config = conf.phases_config(dic)
-                
         self._sequences_names = list()
         
-        #logger config
+        self.load_phase_conf_json() #initialize the self._sequences_config obj
+        
+        self.logger_config() #logger config
+          
+      
+    #config functions that will be used in the construct: __init__():
+    
+    def load_phase_conf_json(self):
+        """
+        Initialize the self._sequences_config obj
+        """
+        route = os.path.join(self._base_directory, self._phase_configuration_directory)
+        #self._phase_config = json.load(open(route)) #load the Phase Configuration saved as .json
+        seqns_dic = json.load(open(route))
+        self._sequences_config = []
+        
+        for seq in seqns_dic['sequences_config']:
+            self._sequences_config.append(conf.sequence_config(seq)) #initialize the construct of each sequence config and add it to a list of sequences config
+          
+            
+    def logger_config(self):
+        """
+        This function configure the logger
+        """
+        
         self._logger = logging.getLogger('AnalyzerLogger')
         self._logger.setLevel(logging.DEBUG)
         handler = logging.FileHandler('logger.log')
@@ -43,7 +64,9 @@ class executions_analyzer:
         handler.setFormatter(formatter)
         self._logger.addHandler(handler)
         self._logger.info("--------------------New Execution of the code-------------------")
-            
+        
+        
+    #principals functions:            
             
     def load_base_directory(self, path):
         """Change the base directory where will be loaded and saved the data 
@@ -140,13 +163,10 @@ class executions_analyzer:
         """Split the Executions to the correspondent sequence,
         generate N folders named as the correspondent sequence
         and inside generate a csv that contains the executions of that sequence 
-        Also when save the (sequence_name)_phases.csv create a new column End Date that contains the End Time of the phase
+        Also when save the (sequence_name)_phases.csv create a new column End Date that contains the End Time of the phase.
+        Also initialize the self._sequences_names
         """
-        path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
-        if(os.path.exists(path_phases_not_contained_in_any_sequence)):
-            self._logger.info("The executions are allready splited by sequence, nothing to do in execution_analyzer.split_sequences()")
-            return
-        
+               
         executions_path = os.path.join(self._base_directory, self._executions_to_filter)
         phases_path = os.path.join(self._base_directory, self._phases_directory)
         
@@ -154,6 +174,11 @@ class executions_analyzer:
         phases = pd.read_csv(phases_path)
         
         self._sequences_names = executions.loc[:, 'SequenceName'].drop_duplicates() #obtain the names of each sequence in the executions
+                
+        path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
+        if(os.path.exists(path_phases_not_contained_in_any_sequence)):
+            self._logger.info("The executions are allready splited by sequence, nothing to do in execution_analyzer.split_sequences()")
+            return 
                 
         phases_ids_contained = list()
         
@@ -226,7 +251,10 @@ class executions_analyzer:
         samples = pd.read_csv(os.path(self._base_directory, self._samples_directory))
         phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
         
+        sorted_samples = samples.sort_values(by=['Time']) # sort ascending the samples by time
         
-            
+        for i, j in sorted_samples.iterrows():
+            print(i,j)
+            print()    
         
         

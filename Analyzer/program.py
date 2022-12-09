@@ -22,10 +22,9 @@ try:
     for sequence in analyzer._sequences_names:
         analyzer._sequence_directory = os.path.join(analyzer._base_directory, sequence, "\\")
         analyzer._phases_by_sequence_directory = os.path.join(sequence, "_phases.csv")
-    
-   
-    
-    print(analyzer._phases_config)
+        
+    conf = analyzer._sequences_config        
+    print(analyzer._sequences_config)
         
         
 except Exception as err :

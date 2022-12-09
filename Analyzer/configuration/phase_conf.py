@@ -7,13 +7,14 @@ class one_phase_config:
         self._samples_count = phase_conf['selection_criteria']['samples_count']
         self._time_duration = phase_conf['selection_criteria']['time_duration']
 
-class phases_config:
+class sequence_config:
     """This class is an array of one_phas_conf
     """
-    def __init__(self, phases_conf):
+    def __init__(self, sequence_conf):
+        self._sequence_name = sequence_conf['sequence_name']
         self._phases_conf = []
         
-        for phase_conf in phases_conf['phase_config']:
+        for phase_conf in sequence_conf['phases_config']:
             self._phases_conf.append(one_phase_config(phase_conf))
         
         
