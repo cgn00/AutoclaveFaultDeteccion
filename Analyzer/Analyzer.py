@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 import os
 import json
-from configuration import phase_conf as conf
+from configuration.phase_conf import sequence_config
 
 class executions_analyzer:
     
@@ -45,11 +45,11 @@ class executions_analyzer:
         """
         route = os.path.join(self._base_directory, self._phase_configuration_directory)
         #self._phase_config = json.load(open(route)) #load the Phase Configuration saved as .json
-        seqns_dic = json.load(open(route))
+        seqns_dic = json.load(open(route, encoding="utf-8")) # encoding="utf-8" is the configuration to read characters in spanish(ó,á,é,ú,í,ñ..) from a file 
         self._sequences_config = []
         
         for seq in seqns_dic['sequences_config']:
-            self._sequences_config.append(conf.sequence_config(seq)) #initialize the construct of each sequence config and add it to a list of sequences config
+            self._sequences_config.append(sequence_config(seq)) #initialize the construct of each sequence config and add it to a list of sequences config
           
             
     def logger_config(self):

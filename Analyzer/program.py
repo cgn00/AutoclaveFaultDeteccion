@@ -1,10 +1,10 @@
 import pandas as pd
 import os
+import Analyzer
 import logging
 import sys
-#from Analyzer import ExecutionsAnalyzer as ExecAnaly
-import Analyzer
 import json
+import configuration.phase_conf 
 
 try:
     path = os.getcwd().removesuffix('Analyzer') + "baseDirectory.txt"
@@ -19,9 +19,13 @@ try:
 
     analyzer.split_sequences()
     
-    for sequence in analyzer._sequences_names:
-        analyzer._sequence_directory = os.path.join(analyzer._base_directory, sequence, "\\")
-        analyzer._phases_by_sequence_directory = os.path.join(sequence, "_phases.csv")
+    for i in range(analyzer._sequences_config.__len__()):
+        analyzer._sequence_directory = analyzer._base_directory + analyzer._data_analysis + '\\'+  analyzer._sequences_config[i]._sequence_name + '\\' # this is the sequence's folder
+        #analyzer._phases_by_sequence_directory = os.path.join(sequence_conf, "_phases.csv")
+        seq_conf = analyzer._sequences_config[i]
+        analyzer._sequences_names
+        print(analyzer._sequence_directory)
+        
         
     conf = analyzer._sequences_config        
     print(analyzer._sequences_config)
