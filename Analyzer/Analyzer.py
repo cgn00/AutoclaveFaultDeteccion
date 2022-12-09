@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import os
 import json
+from phase_configuration import phase_conf 
 
 class ExecutionsAnalyzer:
     
@@ -23,7 +24,8 @@ class ExecutionsAnalyzer:
         self._criterion = "both"
         self._sequence_directory = ""
         self._phases_by_sequence_directory = ""
-        self._phase_configuration = ''
+        self._phase_configuration = []
+        
         
         self._sequences_names = list()
         
@@ -162,6 +164,8 @@ class ExecutionsAnalyzer:
                                                   #the Ids of the phases in each sequence
                         
             temp_phases = phases[phases['ExecutionId'].isin(temp_ids)]
+            
+            temp_phases
                               
             temp_phases.to_csv(path_to_save, index=False, header=phases.columns) #saving the phases that belong to each sequence
             
@@ -179,6 +183,7 @@ class ExecutionsAnalyzer:
         Args:
             phase_name (str): the name of the phase
         """
+        pass
             
         
         

@@ -1,0 +1,83 @@
+[
+    {
+        "name": "Calentamiento",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Drenado",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Enfriamiento",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Esterilización",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Fin de ciclo",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Llenado",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Prueba de junta",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Estabilización",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    },
+    {
+        "name": "Evaluación",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    }
+    ,
+    {
+        "name": "Presurización",
+        "selection_criteria":
+        {
+            "samples_count": 10,
+            "time_duration": 5
+        }
+    }
+]
