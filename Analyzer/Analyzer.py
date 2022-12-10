@@ -18,7 +18,8 @@ class executions_analyzer:
         self._duration_directory = '\\Durations\\'
         self._variables_directory = "\\Variables\\"
         self._data_directory = "\\Datas\\"
-        self._samples_directory = "\\Samples For Executions Cluster\\"
+        self._samples_directory = "Samples For Executions Cluster\\"
+        self._samples_csv_path = 'Datos\\samples.csv'
         self._phases_with_mistakes_in_name = 'Datos\\phases.csv'    # the phases: Esterilizacion an Llenado appear with difirents mistakes in the name
         self._phases_directory = "Datos\\phases_to_analysis.csv"
         self._executions_directory = "Datos\\clean_executions.csv"
@@ -244,17 +245,34 @@ class executions_analyzer:
     
     def filter_samples_by_phases(self, phase_conf):
         """
-
+        This function find all the samples of phase_conf recived and split this samples by executions.
+        Will create N .csv files, where N is the number of executions that this phase has
         Args:
-            phase_conf (obj): the conf of the phase
+            phase_conf (obj: one_phase_config from phase_conf.py module)
         """
-        samples = pd.read_csv(os.path(self._base_directory, self._samples_directory))
+        
+        #ask if the directory exists to return then
+        
+        samples_path = os.path.join(self._base_directory, self._samples_csv_path)
+        samples = pd.read_csv(samples_path)
         phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
+        
+        phase_name = phase_conf._name #the name of the actual phase 
+        
+        start_end_times_of_phase = phases.loc[phases['Text'] == phase_name, 'ExecutionId':'EndTime'] #crate a dataframe with Execution Id, Start and End Time columns of the actual phase
         
         sorted_samples = samples.sort_values(by=['Time']) # sort ascending the samples by time
         
-        for i, j in sorted_samples.iterrows():
-            print(i,j)
-            print()    
+        samples_of_the_phase = pd.DataFrame(columns=['ExecutionId', 'Time', 'Value', 'VariableId', 'VariableName']) #in this dataframe will ve saved the samples of the actual phase, divided by executions
+                                                                                            #the index of the dataframe will be the 'ExecutionId' of each execution of the actual phase
+        i = 0
+        for index, one_samp in sorted_samples.iterrows():
+            
+            if(one_samp['Time'] > start_end_times_of_phase.iloc[i, 1] and one_samp['Time'] < start_end_times_of_phase.loc[i, 2]):
+                samples_of_the_phase.iloc[i, 0] = start_end_times_of_phase.loc[i, 'ExecutionId']
+                samples_of_the_phase.iloc[i, 1:] = one_samp
+            
+            
+            i+=1    
         
         
