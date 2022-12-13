@@ -174,6 +174,8 @@ class executions_analyzer:
         executions = pd.read_csv(executions_path)
         phases = pd.read_csv(phases_path)
         
+        #phases = phases.sort_values(by=['StartTime']) #sort the phases by Start time criteria
+        
         self._sequences_names = executions.loc[:, 'SequenceName'].drop_duplicates() #obtain the names of each sequence in the executions
                 
         path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
@@ -183,7 +185,7 @@ class executions_analyzer:
                 
         phases_ids_contained = list()
         
-        for sequence in self._sequences_names: #itetate on each sequence to assing the executions that belong to each one
+        for sequence in self._sequences_names: #iterate on each sequence to assing the executions that belong to each one
             
             folder_to_save = os.path.join(self._base_directory, self._data_analysis, sequence)
             if(os.path.exists(folder_to_save) == False):
@@ -252,19 +254,52 @@ class executions_analyzer:
         """
         
         #ask if the directory exists to return then
+        path_to_save = os.path.join(self._sequence_directory, phase_conf._name)
+        if(os.path.exists(os.path.join(path_to_save, phase_conf._name +  '_samples.csv')) == True):
+            self._logger.info(f"The samples of the phase {phase_conf._name} are allready splited by sequence, nothing to do in execution_analyzer.filter_samples_by_phases(phase_conf)")
+            return
+        if(os.path.exists(path_to_save) == False):
+            os.makedirs(path_to_save)
         
         samples_path = os.path.join(self._base_directory, self._samples_csv_path)
         samples = pd.read_csv(samples_path)
         phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
         
+        phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
+        phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
+        
+        samples['Time'] = pd.to_datetime(samples['Time'],format=self._date_time_format)
+        
         phase_name = phase_conf._name #the name of the actual phase 
         
-        start_end_times_of_phase = phases.loc[phases['Text'] == phase_name, 'ExecutionId':'EndTime'] #crate a dataframe with Execution Id, Start and End Time columns of the actual phase
+        start_end_times_of_phase = phases.loc[phases['Text'] == phase_name, 'EntityId':'EndTime'] #crate a dataframe with Execution Id, Start and End Time columns of the actual phase
+        start_end_times_of_phase.sort_values(by=['StartTime'], inplace=True)
         
         sorted_samples = samples.sort_values(by=['Time']) # sort ascending the samples by time
         
         samples_of_the_phase = pd.DataFrame(columns=['ExecutionId', 'Time', 'Value', 'VariableId', 'VariableName']) #in this dataframe will ve saved the samples of the actual phase, divided by executions
                                                                                             #the index of the dataframe will be the 'ExecutionId' of each execution of the actual phase
+        
+        start = start_end_times_of_phase['StartTime'].iloc[0]
+        end = start_end_times_of_phase['EndTime'].iloc[start_end_times_of_phase.__len__()-1]
+        
+        correct_samples = sorted_samples[(sorted_samples['Time'] >= start) & (sorted_samples['Time'] <= end)]
+        #correct_samples['EntityId'] = np.nan
+        correct_samples.loc[:,'EntityId'] = np.nan
+        correct_samples['ExecutionId'] = np.nan
+        
+        for index, phase_row in start_end_times_of_phase.iterrows():
+            boolean = (sorted_samples['Time'] >= phase_row.loc['StartTime']) & (sorted_samples['Time'] <= phase_row.loc['EndTime'])
+  
+            correct_samples.loc[boolean, 'EntityId'] = phase_row['EntityId']
+            correct_samples.loc[boolean, 'ExecutionId'] = phase_row['ExecutionId']
+            
+        correct_samples.dropna(inplace=True)
+        
+
+        correct_samples.to_csv(os.path.join(path_to_save , phase_conf._name +  '_samples.csv'), index=False, header=True)
+            
+        '''
         i = 0
         for index, one_samp in sorted_samples.iterrows():
             
@@ -274,5 +309,6 @@ class executions_analyzer:
             
             
             i+=1    
-        
+        '''
+        pass
         

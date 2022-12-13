@@ -1,4 +1,4 @@
-class one_phase_config:
+class phase_config:
     """This class contains the configuration parameters of the class
     """
     
@@ -15,6 +15,6 @@ class sequence_config:
         self._phases_conf = []
         
         for phase_conf in sequence_conf['phases_config']:
-            self._phases_conf.append(one_phase_config(phase_conf))
+            self._phases_conf.append(phase_config(phase_conf))
         
         

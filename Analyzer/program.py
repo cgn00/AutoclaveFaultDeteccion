@@ -34,5 +34,5 @@ try:
         
         
 except Exception as err :
-    print(f"Unexpected {err=}, {type(err)=}")
+    print(str(err))
     raise
