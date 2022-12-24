@@ -248,8 +248,8 @@ class executions_analyzer:
     
     def filter_samples_by_phases(self, phase_conf):
         """
-        This function find all the samples of phase_conf recived and split this samples by executions.
-        Will create N .csv files, where N is the number of executions that this phase has
+        This function find all the samples of the phase_conf recived and Will create phase_name_samples.csv files
+        where are saved all the samples of the phase_conf recived
         Args:
             phase_conf (obj: one_phase_config from phase_conf.py module)
         """
@@ -278,9 +278,6 @@ class executions_analyzer:
         
         sorted_samples = samples.sort_values(by=['Time']) # sort ascending the samples by time
         
-        samples_of_the_phase = pd.DataFrame(columns=['ExecutionId', 'Time', 'Value', 'VariableId', 'VariableName']) #in this dataframe will ve saved the samples of the actual phase, divided by executions
-                                                                                            #the index of the dataframe will be the 'ExecutionId' of each execution of the actual phase
-        
         start = start_end_times_of_phase['StartTime'].iloc[0]
         end = start_end_times_of_phase['EndTime'].iloc[start_end_times_of_phase.__len__()-1]
         
@@ -300,16 +297,6 @@ class executions_analyzer:
 
         correct_samples.to_csv(os.path.join(path_to_save , phase_conf._name +  '_samples.csv'), index=False, header=True)
             
-        '''
-        i = 0
-        for index, one_samp in sorted_samples.iterrows():
-            
-            if(one_samp['Time'] > start_end_times_of_phase.iloc[i, 1] and one_samp['Time'] < start_end_times_of_phase.loc[i, 2]):
-                samples_of_the_phase.iloc[i, 0] = start_end_times_of_phase.loc[i, 'ExecutionId']
-                samples_of_the_phase.iloc[i, 1:] = one_samp
-            
-            
-            i+=1    
-        '''
-        pass
-        
+       
+       
+       
