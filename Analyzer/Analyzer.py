@@ -129,7 +129,7 @@ class executions_analyzer:
         This function remove executions with incorrect Start or End Time.
         The Start Time can't happen after the End Time
         and the execution (N-1) can't start before the execution (N),
-        or The execution (N-1) can't end after the execution (N)
+        or The execution (N-1) can't end after the execution (N) start
         It's the equivalent CleanExecutionsCSV function of the analysis class in C#
         """
         
@@ -142,6 +142,7 @@ class executions_analyzer:
             return
         
         executions = pd.read_csv(path_to_read, sep=',')
+        executions.sort_values(by=['StartTime'], inplace=True) # sort the dataframe by StartTime criterion
         
         correct_exc = pd.DataFrame(columns=executions.columns)
         
