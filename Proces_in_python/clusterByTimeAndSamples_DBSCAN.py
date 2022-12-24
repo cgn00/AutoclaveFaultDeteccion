@@ -7,13 +7,14 @@ from sklearn.cluster import DBSCAN
 from collections import Counter
 
 def clusterByTimeAndSamples():
-    base_directory = os.getcwd() #obtain the current directory
+    base_directory_txt_path = os.getcwd().removesuffix('Proces_in_python') + "baseDirectory.txt"
+    base_directory = pd.read_csv(base_directory_txt_path, header=None).iloc[0].values[0] #reading the base deirectory where is allocated the Data
     #base_directory = pd.read_csv()
     sequences = {"Esterilización": 0, "Prueba de estanco": 0}
     
     for seq in sequences:
-        path = base_directory + "\\" + seq + "\\"  
-        df = pd.read_csv(path + seq + "_phases.csv", header=None) #reading the csv that contains the phases that belong to the sequence
+        path = base_directory + 'Data_Analysis\\' + seq + "\\"  
+        df = pd.read_csv(path  + seq + "_phases.csv", header=None) #reading the csv that contains the phases that belong to the sequence
         sequences[seq] = df[3].unique() #asign the phases names to each sequence
         
         for phase in sequences[seq]:
