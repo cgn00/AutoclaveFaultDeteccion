@@ -30,6 +30,8 @@ class executions_analyzer:
         self._date_time_format = "%Y-%m-%d %H:%M:%S.%f"
         self._sequence_directory = ''
         self._phases_by_sequence_directory = ''
+        
+        self.variables_ids = [7, 8, 9, 10, 11, 12, 13] #these are the ids of the 7 variables(6 temperatures and 1 presure)
                 
         self._sequences_names = list()
         
@@ -236,6 +238,7 @@ class executions_analyzer:
                                                                                  else executions.loc[executions['ExecutionId'] == row['ExecutionId'], 'EndTime'].item()
                                                                                  , axis=1) #adding the correct end time column 
                                         
+            temp_phases.sort_values(by=['Time'], inplace=True) #sort the phases by StartTime criterion
             temp_phases.to_csv(path_to_save, index=False, header=['EntityId', 'ExecutionId', 'StartTime', 'EndTime', 'Text']) #saving the phases that belong to each sequence
             
         
@@ -249,21 +252,26 @@ class executions_analyzer:
     def filter_samples_by_phases(self, phase_conf):
         """
         This function find all the samples of the phase_conf recived and Will create phase_name_samples.csv files
-        where are saved all the samples of the phase_conf recived
+        where are saved all the samples of the phase_conf recived. Only saves the samples wichs 'SampleId' is containned in self.variables_ids.
+        The samples saved are sorted by 'Time'
         Args:
-            phase_conf (obj: one_phase_config from phase_conf.py module)
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
         """
         
         #ask if the directory exists to return then
         path_to_save = os.path.join(self._sequence_directory, phase_conf._name)
         if(os.path.exists(os.path.join(path_to_save, phase_conf._name +  '_samples.csv')) == True):
-            self._logger.info(f"The samples of the phase {phase_conf._name} are allready splited by sequence, nothing to do in execution_analyzer.filter_samples_by_phases(phase_conf)")
+            self._logger.info(f"The samples of the phase {phase_conf._name} are allready splited by phase, nothing to do in execution_analyzer.filter_samples_by_phases(phase_conf)")
             return
+        
         if(os.path.exists(path_to_save) == False):
             os.makedirs(path_to_save)
         
         samples_path = os.path.join(self._base_directory, self._samples_csv_path)
         samples = pd.read_csv(samples_path)
+        
+        samples = samples[samples['VariableId'].isin(self.variables_ids)]#remove the samples with ids that arn't at self.variables_ids, the 6 temp and 1 presuere
+        
         phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
         
         phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
@@ -281,15 +289,15 @@ class executions_analyzer:
         start = start_end_times_of_phase['StartTime'].iloc[0]
         end = start_end_times_of_phase['EndTime'].iloc[start_end_times_of_phase.__len__()-1]
         
-        correct_samples = sorted_samples[(sorted_samples['Time'] >= start) & (sorted_samples['Time'] <= end)]
+        correct_samples = sorted_samples[(sorted_samples['Time'] >= start) & (sorted_samples['Time'] <= end)] #these are the samples of the actual phase, but aren't labeled by ExecutionId or EntityId yet
         #correct_samples['EntityId'] = np.nan
-        correct_samples.loc[:,'EntityId'] = np.nan
-        correct_samples['ExecutionId'] = np.nan
+        correct_samples.loc[:, 'EntityId'] = np.nan #this column is the unique id of the phase execution
+        correct_samples.loc[:, 'ExecutionId'] = np.nan #this column is the id of the entire execution (an execution contains diferents EntityId, one for each phase executed in the execution)
         
-        for index, phase_row in start_end_times_of_phase.iterrows():
-            boolean = (sorted_samples['Time'] >= phase_row.loc['StartTime']) & (sorted_samples['Time'] <= phase_row.loc['EndTime'])
-  
-            correct_samples.loc[boolean, 'EntityId'] = phase_row['EntityId']
+        for index, phase_row in start_end_times_of_phase.iterrows(): #iterate over the phase executions to assign the ExecutionId and EntityId to each sample
+            boolean = (sorted_samples['Time'] >= phase_row.loc['StartTime']) & (sorted_samples['Time'] <= phase_row.loc['EndTime']) #return a true and false column with the samples of the actual phase execution
+            
+            correct_samples.loc[boolean, 'EntityId'] = phase_row['EntityId'] #assign the EntityId and the ExecutionId to the samples of the actual phase execution
             correct_samples.loc[boolean, 'ExecutionId'] = phase_row['ExecutionId']
             
         correct_samples.dropna(inplace=True)
@@ -297,6 +305,62 @@ class executions_analyzer:
 
         correct_samples.to_csv(os.path.join(path_to_save , phase_conf._name +  '_samples.csv'), index=False, header=True)
             
-       
-       
+            
+    def save_data_csv(self, phase_conf):
+        """_summary_
+        
+        Generate a phase_name_data.csv file that contains one column for the respective variableId
+
+        Args:
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
+        """
+        
+        #ask if the directory exists to return then
+        path = os.path.join(self._sequence_directory, phase_conf._name)
+        file_to_read = os.path.join(path, phase_conf._name +  '_samples.csv')
+        file_to_save = os.path.join(path, phase_conf._name +  '_data.csv')
+         
+        if(os.path.exists(file_to_save)):
+            self._logger.info(f"The  {file_to_save} allready exists, nothing to do in execution_analyzer.save_data_csv(phase_conf)")
+            return
+        
+        samples = pd.read_csv(file_to_read)
+        #samples['Time'] = pd.to_datetime(samples['Time'], format=self._date_time_format) #declarate the column 'Time' as DateTime type
+        
+        headers = ['ExecutionId', 'EntityId', 'Time', 'SampleId']
+        for id in self.variables_ids:
+            headers.append(str('Variable_Id_' + str(id))) #each variable Id from self.variables_ids will represent a column at the dataframe
+                
+        data = pd.DataFrame(columns=headers)
+        
+        data['Time'] = samples['Time'].unique() #assign the time of each sample
+        
+        sample_id = 0
+        last_entityId = samples.iloc[0, 4] #this is the Entity Id of the first sample first 
+        
+        for index, data_row in data.iterrows(): #iterate over each row of the dataframe to obtain the time of the sample
+            samples_searched_by_time = samples[samples['Time'] == data_row['Time']] #obtain the 7 samples(one sample for each variable) that belong to the actual time
+            
+            actual_entityId = samples_searched_by_time.iloc[0, 4] #assign 'EntityId'
+            
+            if(last_entityId != actual_entityId): #if the actual sample belong to a new EntityId then reset the sample id
+                sample_id = 1 #restart the counter
+            else: #if the actual sample doesn't belong to a new EntityId then increment the sample id
+                sample_id += 1
+            
+            data_row['ExecutionId'] = samples_searched_by_time.iloc[0, 5] #assign 'ExecutionId'
+            data_row['EntityId'] = samples_searched_by_time.iloc[0, 4]  #assign 'EntityId'
+            data_row['SampleId'] = sample_id # assign 'SampleId'
+            
+            for sample in samples_searched_by_time.itertuples(index=False): #iterate over each variable of the samples that were measured in the actual time
+                variableId_position = str('Variable_Id_' + str(sample[2])) #the varible id of the sample will say to wich column at the data(dataframe) assign the value of the sample
+                data_row[variableId_position] = sample[1] # the data_row at the column that correspond with the variableId of the sample will be assigned the value of this measurement
+                   
+            
+            last_entityId = actual_entityId #in the next iteration the last_entityId is the actual
+                       
+             
+        data.to_csv(file_to_save, header=True, index=False)
+        
+
        
