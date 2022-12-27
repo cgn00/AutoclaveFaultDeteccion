@@ -15,7 +15,7 @@ try:
     
     analyzer.clean_phases_names_mistakes()
 
-    analyzer.remove_incorrect_time() 
+    analyzer.remove_executions_with_incorrect_time() 
 
     analyzer.split_sequences()
     
