@@ -126,12 +126,11 @@ class executions_analyzer:
         data.to_csv(path, columns=["EntityId", "ExecutionId", "Time", "Text"], index=False)
 
 
-    def remove_incorrect_time(self):
+    def remove_executions_with_incorrect_time(self):
         """
         This function remove executions with incorrect Start or End Time.
-        The Start Time can't happen after the End Time
-        and the execution (N-1) can't start before the execution (N),
-        or The execution (N-1) can't end after the execution (N) start
+        The Start Time can't happen after the End Time.
+        Generate at ...Datos\\ a "clean_executions.csv" file with the corrects executions
         It's the equivalent CleanExecutionsCSV function of the analysis class in C#
         """
         
@@ -148,15 +147,23 @@ class executions_analyzer:
         
         correct_exc = pd.DataFrame(columns=executions.columns)
         
+        """
         if(executions.loc[0, 'StartTime'] < executions.loc[0, 'EndTime']):
             correct_exc.loc[len(correct_exc)] = executions.loc[0, :]
+        """
         
-        rows_count = executions.shape[0]
+        #rows_count = executions.shape[0]
         
-        for i in range(1, rows_count, 1):
-            if(executions.loc[i, 'StartTime'] >= correct_exc.loc[len(correct_exc) - 1, 'EndTime'] and executions.loc[i, 'StartTime'] < executions.loc[i,'EndTime']):
+        correct_exc = executions[executions['StartTime'] < executions['EndTime']]
+        
+        '''
+        for i in range(0, rows_count, 1):
+            #if(executions.loc[i, 'StartTime'] >= correct_exc.loc[len(correct_exc) - 1, 'EndTime'] and executions.loc[i, 'StartTime'] < executions.loc[i,'EndTime']):
+            if(executions.loc[i, 'StartTime'] < executions.loc[i, 'EndTime']):
                 #the atual execution has a correct start and end times
                 correct_exc.loc[len(correct_exc)] = executions.loc[i, :] #add all the columns of the row
+        
+        '''
         
         correct_exc.to_csv(path_to_save, header=True, index=False)
         
@@ -171,7 +178,7 @@ class executions_analyzer:
         Also initialize the self._sequences_names
         """
                
-        executions_path = os.path.join(self._base_directory, self._executions_to_filter)
+        executions_path = os.path.join(self._base_directory, self._executions_directory)
         phases_path = os.path.join(self._base_directory, self._phases_directory)
         
         executions = pd.read_csv(executions_path)
@@ -192,7 +199,7 @@ class executions_analyzer:
             
             folder_to_save = os.path.join(self._base_directory, self._data_analysis, sequence)
             if(os.path.exists(folder_to_save) == False):
-                 os.makedirs(folder_to_save)
+                os.makedirs(folder_to_save)
             
             path_to_save = os.path.join(folder_to_save, f"{sequence}_phases.csv") #path where will be saved the phases that belong to the current sequence
             
@@ -296,6 +303,8 @@ class executions_analyzer:
         
         for index, phase_row in start_end_times_of_phase.iterrows(): #iterate over the phase executions to assign the ExecutionId and EntityId to each sample
             boolean = (sorted_samples['Time'] >= phase_row.loc['StartTime']) & (sorted_samples['Time'] <= phase_row.loc['EndTime']) #return a true and false column with the samples of the actual phase execution
+            
+            phases['']
             
             correct_samples.loc[boolean, 'EntityId'] = phase_row['EntityId'] #assign the EntityId and the ExecutionId to the samples of the actual phase execution
             correct_samples.loc[boolean, 'ExecutionId'] = phase_row['ExecutionId']
