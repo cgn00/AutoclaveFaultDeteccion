@@ -258,8 +258,10 @@ class executions_analyzer:
     
     def filter_samples_by_phases(self, phase_conf):
         """
-        This function find all the samples of the phase_conf recived and Will create phase_name_samples.csv files
-        where are saved all the samples of the phase_conf recived. Only saves the samples wichs 'SampleId' is containned in self.variables_ids.
+        This function find all the samples of the phase_conf recived and Will create phase_name_samples.csv file
+        where are saved all the samples of the phase_conf recived. 
+        Also generate a phase_name_data.csv file that contains one column for the respective variableId with the time serie of the samples
+        Only saves the samples wichs 'SampleId' is containned in self.variables_ids.
         The samples saved are sorted by 'Time'
         Args:
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
@@ -301,8 +303,7 @@ class executions_analyzer:
         
         correct_samples.loc[:, 'EntityId'] = np.nan #this column is the unique id of the phase execution
         correct_samples.loc[:, 'ExecutionId'] = np.nan #this column is the id of the entire execution (an execution contains diferents EntityId, one for each phase executed in the execution)
-        
-        
+                
         
         headers = ['ExecutionId', 'EntityId', 'Time', 'SampleId']
         for id in self.variables_ids:
@@ -313,8 +314,7 @@ class executions_analyzer:
         
         data['Time'] = correct_samples['Time'].unique() #assign the time of each sample
         
-        
-        
+                
         for index, phase_row in all_exec_of_one_phase.iterrows(): #iterate over each phase execution to assign the ExecutionId and EntityId to each sample
             boolean = (correct_samples['Time'] >= phase_row.loc['StartTime']) & (correct_samples['Time'] < phase_row.loc['EndTime']) #return a true and false column with the samples of the actual phase execution
             
@@ -348,7 +348,7 @@ class executions_analyzer:
             phases.loc[phases['EntityId'] == phase_row.loc['EntityId'], 'SampleCount'] = sample_id #save the number of samples that the executions of the phase(time serie) has
             
         
-        phases.to_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, 'phases_with_number_of_samples.csv',) , index=False, header=True)
+        phases.to_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory) , index=False, header=True)
         
         correct_samples.dropna(inplace=True) #remove the samples that not belong to the phase
         
