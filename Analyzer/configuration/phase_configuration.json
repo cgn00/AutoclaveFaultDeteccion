@@ -17,8 +17,8 @@
                     "name": "Drenado",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 4,
+                        "time_duration": 2
                     }
                 },
                 {
@@ -41,24 +41,24 @@
                     "name": "Fin de ciclo",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 1,
+                        "time_duration": 0
                     }
                 },
                 {
                     "name": "Llenado",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 4,
+                        "time_duration": 2
                     }
                 },
                 {
                     "name": "Prueba de junta",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 2,
+                        "time_duration": 1
                     }
                 }
             ]
@@ -71,32 +71,32 @@
                     "name": "Estabilización",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 4,
+                        "time_duration": 2
                     }
                 },
                 {
                     "name": "Evaluación",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 4,
+                        "time_duration": 2
                     }
                 },
                 {
                     "name": "Fin de ciclo",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 1,
+                        "time_duration": 0
                     }
                 },
                 {
                     "name": "Presurización",
                     "selection_criteria":
                     {
-                        "samples_count": 10,
-                        "time_duration": 5
+                        "samples_count": 2,
+                        "time_duration": 1
                     }
                 }
             ]

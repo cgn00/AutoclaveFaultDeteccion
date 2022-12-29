@@ -4,6 +4,10 @@ from datetime import datetime
 import logging
 import os
 import json
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import DBSCAN
+from collections import Counter
 from configuration.phase_conf import sequence_config
 
 class executions_analyzer:
@@ -269,8 +273,8 @@ class executions_analyzer:
         
         #ask if the directory exists to return then
         path_to_save = os.path.join(self._sequence_directory, phase_conf._name)
-        if(os.path.exists(os.path.join(path_to_save, phase_conf._name +  '_samples.csv')) == True):
-            self._logger.info(f"The samples of the phase {phase_conf._name} are allready splited by phase, nothing to do in execution_analyzer.filter_samples_by_phases(phase_conf)")
+        if(os.path.exists(os.path.join(path_to_save, phase_conf._name +  '_data.csv')) == True):
+            self._logger.info(f"The samples of the phase {phase_conf._name} are allready splited by phase (the file {phase_conf._name}_data.csv allready exists), nothing to do in execution_analyzer.filter_samples_by_phases(phase_conf)")
             return
         
         if(os.path.exists(path_to_save) == False):
@@ -365,6 +369,8 @@ class executions_analyzer:
         """_summary_
         
         Generate a phase_name_data.csv file that contains one column for the respective variableId
+        
+        The function: filter_samples_by_phases(self, phase_conf) do the task of this function more efficient and fast
 
         Args:
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
@@ -418,4 +424,83 @@ class executions_analyzer:
         data.to_csv(file_to_save, header=True, index=False)
         
 
-       
+    def remove_incorrect_time_series(self, phase_conf, sequence_name):
+        """Remove from the analysis the time series that do not satisfy the phase_conf minimun number of samples and time criteria.
+        Also remove the time series that don't have the linnear relation between time and number of samples(number of samples = 2 samples per minute, y=2t)
+
+        Args:
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
+        """
+        
+        data_path = os.path.join(self._sequence_directory, phase_conf._name, phase_conf._name +  '_data.csv')
+        
+        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
+        phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
+        phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
+        
+        phases = phases[phases['Text'] == phase_conf._name] #select only the phases of the type of phase_conf
+        
+        #duration = phases['EndTime'] - phases['StartTime']
+                      
+        boolean = (phases['SampleCount'] >= phase_conf._samples_count) #remove the time series that not satisfy the minimun number of samples of the phase
+        
+        corrects_phases = phases.loc[boolean]
+        bad_phases = phases.loc[~boolean]
+        
+        time_serie_duration_minutes = corrects_phases.apply(lambda row: (row['EndTime'] - row['StartTime']).total_seconds() /60
+                                                   , axis=1) #the duration in minutes of each execution of the phase(the time serie of the samples)
+        
+        time_serie_number_of_samples = corrects_phases['SampleCount'] #the number of samples that the time serie has
+        
+        start_time = 0
+        end_time = int(time_serie_duration_minutes.max().round()) #start and end time of the plot
+        
+        x = np.arange(start=start_time, stop=end_time+1) #the stop time isn't include in np.arange()
+        y = 2*time_serie_duration_minutes.to_numpy() # y: is the expected number of samples evalueted in 2*(duration in minutes)
+        
+        ones = np.ones(x.shape)
+        
+        error = np.power((y - time_serie_number_of_samples.to_numpy()), 2) #cuadratic error between the expected and the real number of samples of the time serie
+        mean = error.mean()
+        std = error.std()
+        
+        mean = ones * mean
+        std = ones * std
+        
+        bad_phases = bad_phases.append(corrects_phases[~(error < (error.mean() + error.std())) & (error > (error.mean() - error.std()))])#obtain the executions of the phases that are outside the mean +- std of the error 
+                                    #(the ~ negate the true-false serie and give the opositive)  
+        bad_executions_ids = bad_phases['ExecutionId']
+        
+        corrects_phases = corrects_phases[(error < (error.mean() + error.std())) & (error > (error.mean() - error.std()))] #remove the executions of the phases that are outside the mean +- std of the error       
+        good_executions_ids = corrects_phases['ExecutionId']
+        
+        data = pd.read_csv(data_path) #read the data to remove the time serie with bad executions ids
+        
+        index_to_drop = data[data['ExecutionId'].isin(bad_executions_ids)].index
+        
+        good_data = data.drop(index=index_to_drop) #this is the data of the time serie with the good executions ids(removed the bad executions ids)
+        
+        good_data.to_csv(data_path, index=False, header=True) #saving the good data as data.csv
+        
+        #---VISUALIZATION---
+        data_durations = pd.concat([time_serie_duration_minutes, time_serie_number_of_samples], axis=1,)
+        data_durations.columns = ['time', 'num_samp']
+        
+        clusters = DBSCAN(eps=3.5, min_samples=5).fit(data_durations)
+        
+        plt.subplot(2, 1, 1)
+        p = sns.scatterplot(data=data_durations, x="time", y="num_samp" ,hue=clusters.labels_, legend="full", palette="deep")
+        #sns.move_legend(p, loc = "upper right", bbox_to_anchor = (1.17, 1.12), title = 'Clusters')
+        plt.title("Sequence: " + sequence_name + "\nPhase: " + phase_conf._name + "\n" + str(Counter(clusters.labels_)))
+        #plt.text(0, 200, str(Counter(clusters.labels_)))
+        
+        plt.plot(time_serie_duration_minutes, y)
+        
+        plt.subplot(2, 1, 2)
+        plt.scatter(time_serie_duration_minutes, error, marker='.')
+        plt.plot(x, mean)
+        plt.plot(x, mean + std, color='red', linestyle='dashed')
+        plt.plot(x, mean - std, color='red', linestyle='dashed')
+        plt.show()
+        plt.close()
+        

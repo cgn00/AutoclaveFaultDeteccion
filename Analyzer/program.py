@@ -26,11 +26,11 @@ try:
         
         for phase_conf in seq_conf._phases_conf: #iterate over each one_phase_config of the actual sequence
             analyzer.filter_samples_by_phases(phase_conf)
-            #analyzer.save_data_csv(phase_conf)
+            analyzer.remove_incorrect_time_series(phase_conf, seq_conf._sequence_name)
 
                 
     conf = analyzer._sequences_config        
-    print(analyzer._sequences_config)
+    
         
         
 except Exception as err :
