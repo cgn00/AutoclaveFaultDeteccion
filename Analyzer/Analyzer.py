@@ -1,14 +1,15 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
 import logging
 import os
 import json
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datetime import datetime
 from sklearn.cluster import DBSCAN
 from collections import Counter
 from configuration.phase_conf import sequence_config
+from dtaidistance import dtw
 
 class executions_analyzer:
     
@@ -488,6 +489,7 @@ class executions_analyzer:
         
         clusters = DBSCAN(eps=3.5, min_samples=5).fit(data_durations)
         
+        '''
         plt.subplot(2, 1, 1)
         p = sns.scatterplot(data=data_durations, x="time", y="num_samp" ,hue=clusters.labels_, legend="full", palette="deep")
         #sns.move_legend(p, loc = "upper right", bbox_to_anchor = (1.17, 1.12), title = 'Clusters')
@@ -503,4 +505,53 @@ class executions_analyzer:
         plt.plot(x, mean - std, color='red', linestyle='dashed')
         plt.show()
         plt.close()
+        '''
         
+    def calculate_dtw_metrics(self, phase_conf):
+        """For each variable(in self.variables_ids) calculate the distances between the time series on each execution of the phase received.
+        These distances will be used to determinate clusters with DBSCAN to clasify good and fail executions of the phase received
+
+        Args:
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
+        """
+
+        data_path = os.path.join(self._sequence_directory, phase_conf._name, phase_conf._name +  '_data.csv')
+        data = pd.read_csv(data_path) #load the data.csv where are the time series of each variable
+        
+        executions_ids = data['ExecutionId'].unique()
+        
+        for variab_id in self.variables_ids: #iterate over each variableId (7..13)
+            
+            time_series_list = []
+                              
+            for exe_id in executions_ids: #iterate over each execution to obtain the time serie of each execution
+                temp_time_serie = data.loc[data['ExecutionId'] == exe_id, f'Variable_Id_{variab_id}'].to_numpy() #obtain the time serie of the variable in the iteration
+
+                time_series_list.append(temp_time_serie) #add the time serie to the list of this execution
+            
+            time_series_one_variable = np.array(time_series_list) #convert the list of times series into a np.array
+            
+            length = time_series_one_variable.__len__() #the number of time series (# of executions of the phase)
+            
+            distance = np.zeros(length)
+            
+            for j in range(length): #iterate over each time serie
+                
+                temp_distance = np.zeros(length) #temporal distances between one time serie and the other, to calculate the median of them
+                
+                for k in range(length): #iterate over each time serie
+                    
+                    x = time_series_one_variable[j] #the time serie that will be compare to the others and keep de median of the distances
+                    
+                    y = time_series_one_variable[k] #the time serie to compare to (x) 
+                    
+                    dist = dtw.distance(x, y)
+                    temp_distance[k] = dist
+                    
+                
+                distance[j] = np.median(temp_distance)
+                    
+                    
+                    
+                    
+        pass
