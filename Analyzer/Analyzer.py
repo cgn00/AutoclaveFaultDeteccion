@@ -20,16 +20,17 @@ class executions_analyzer:
     
     def __init__(self, path):
         self._base_directory = path 
-        self._duration_directory = '\\Durations\\'
-        self._variables_directory = "\\Variables\\"
-        self._data_directory = "\\Datas\\"
+        self._duration_directory = 'Durations\\'
+        self._variables_directory = "Variables\\"
+        self._data_directory = "Datas\\"
         self._samples_directory = "Samples For Executions Cluster\\"
-        self._samples_csv_path = 'Datos\\samples.csv'
-        self._phases_with_mistakes_in_name = 'Datos\\phases.csv'    # the phases: Esterilizacion an Llenado appear with difirents mistakes in the name
+        self._samples_csv_directory = 'Datos\\samples.csv'
+        self._phases_with_mistakes_in_name_directory = 'Datos\\phases.csv'    # the phases: Esterilizacion an Llenado appear with difirents mistakes in the name
         self._phases_directory = "Datos\\phases_to_analysis.csv"
         self._executions_directory = "Datos\\clean_executions.csv"
-        self._executions_to_filter = "Datos\\executions.csv"
-        self._data_analysis = 'Data_Analysis'
+        self._executions_to_filter_directory = "Datos\\executions.csv"
+        self._data_analysis_directory = 'Data_Analysis'
+        self._distances_dtw_directory = 'Distances_DTW\\'
         self._phase_configuration_directory = 'Analyzer\\configuration\\phase_configuration.json'
         self._criterion = "both"
         self._date_time_format = "%Y-%m-%d %H:%M:%S.%f"
@@ -95,7 +96,7 @@ class executions_analyzer:
             self._logger.info("phases_to_analysis.csv allready exists, nothing to to in clean_phases_names_mistakes()")
             return
         
-        path = os.path.join(self._base_directory, self._phases_with_mistakes_in_name)
+        path = os.path.join(self._base_directory, self._phases_with_mistakes_in_name_directory)
         
         data = pd.read_csv(path, sep=",")
 
@@ -139,7 +140,7 @@ class executions_analyzer:
         It's the equivalent CleanExecutionsCSV function of the analysis class in C#
         """
         
-        path_to_read = os.path.join(self._base_directory, self._executions_to_filter)
+        path_to_read = os.path.join(self._base_directory, self._executions_to_filter_directory)
         path_to_save = os.path.join(self._base_directory, self._executions_directory)
         
         if(os.path.exists(path_to_save)):
@@ -193,7 +194,7 @@ class executions_analyzer:
         
         self._sequences_names = executions.loc[:, 'SequenceName'].drop_duplicates() #obtain the names of each sequence in the executions
                 
-        path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis, 'phases_not_contained_in_any_sequence.csv')
+        path_phases_not_contained_in_any_sequence = os.path.join(self._base_directory, self._data_analysis_directory, 'phases_not_contained_in_any_sequence.csv')
         if(os.path.exists(path_phases_not_contained_in_any_sequence)):
             self._logger.info("The executions are allready splited by sequence, nothing to do in execution_analyzer.split_sequences()")
             return 
@@ -202,7 +203,7 @@ class executions_analyzer:
         
         for sequence in self._sequences_names: #iterate on each sequence to assing the executions that belong to each one
             
-            folder_to_save = os.path.join(self._base_directory, self._data_analysis, sequence)
+            folder_to_save = os.path.join(self._base_directory, self._data_analysis_directory, sequence)
             if(os.path.exists(folder_to_save) == False):
                 os.makedirs(folder_to_save)
             
@@ -281,12 +282,12 @@ class executions_analyzer:
         if(os.path.exists(path_to_save) == False):
             os.makedirs(path_to_save)
         
-        samples_path = os.path.join(self._base_directory, self._samples_csv_path)
+        samples_path = os.path.join(self._base_directory, self._samples_csv_directory)
         samples = pd.read_csv(samples_path)
         
         samples = samples[samples['VariableId'].isin(self.variables_ids)]#remove the samples with ids that arn't at self.variables_ids, the 6 temp and 1 presuere
         
-        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
+        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory))
         
         phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
         phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
@@ -353,7 +354,7 @@ class executions_analyzer:
             phases.loc[phases['EntityId'] == phase_row.loc['EntityId'], 'SampleCount'] = sample_id #save the number of samples that the executions of the phase(time serie) has
             
         
-        phases.to_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory) , index=False, header=True)
+        phases.to_csv(os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory) , index=False, header=True)
         
         correct_samples.dropna(inplace=True) #remove the samples that not belong to the phase
         
@@ -435,7 +436,7 @@ class executions_analyzer:
         
         data_path = os.path.join(self._sequence_directory, phase_conf._name, phase_conf._name +  '_data.csv')
         
-        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis, self._sequence_directory, self._phases_by_sequence_directory))
+        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory))
         phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
         phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
         
@@ -522,6 +523,15 @@ class executions_analyzer:
         
         for variab_id in self.variables_ids: #iterate over each variableId (7..13)
             
+            path_to_save = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory)
+            if(os.path.exists(path_to_save) == False):    
+                os.makedirs(path_to_save)
+            file_path = os.path.join(path_to_save, f'distances_variable_{variab_id}.csv')
+            
+            if(os.path.exists(file_path)):
+                self._logger.info(f"The DTW distances {file_path} of the phase {phase_conf._name} are allready, nothing to calculate with the variableId: {variab_id}")
+                continue #jump to the next variableId
+            
             time_series_list = []
                               
             for exe_id in executions_ids: #iterate over each execution to obtain the time serie of each execution
@@ -541,17 +551,19 @@ class executions_analyzer:
                 
                 for k in range(length): #iterate over each time serie
                     
-                    x = time_series_one_variable[j] #the time serie that will be compare to the others and keep de median of the distances
+                    #x = time_series_one_variable[j] #the time serie that will be compare to the others and keep de median of the distances
                     
-                    y = time_series_one_variable[k] #the time serie to compare to (x) 
+                    #y = time_series_one_variable[k] #the time serie to compare to (x) 
                     
-                    dist = dtw.distance(x, y)
-                    temp_distance[k] = dist
+                    temp_distance[k] = dtw.distance_fast(time_series_one_variable[j], time_series_one_variable[k])
                     
                 
-                distance[j] = np.median(temp_distance)
+                distance[j] = np.median(temp_distance) #keep the median of the distances from the time serie [j] with respect to the others
+                
+            distance_df = pd.DataFrame(distance)
+            
+            distance_df.to_csv(file_path, index=False, header=False)
                     
+                  
                     
-                    
-                    
-        pass
+         

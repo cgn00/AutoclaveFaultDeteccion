@@ -20,7 +20,7 @@ try:
     analyzer.split_sequences()
     
     for i in range(analyzer._sequences_config.__len__()): #iterate over the sequences loadeds from the phase_configuration.json
-        analyzer._sequence_directory = analyzer._base_directory + analyzer._data_analysis + '\\'+  analyzer._sequences_config[i]._sequence_name + '\\' # this is the sequence's folder
+        analyzer._sequence_directory = analyzer._base_directory + analyzer._data_analysis_directory + '\\'+  analyzer._sequences_config[i]._sequence_name + '\\' # this is the sequence's folder
         analyzer._phases_by_sequence_directory = analyzer._sequences_config[i]._sequence_name + '_phases.csv' #this is the csv where are saved the phases of the actual sequence
         seq_conf = analyzer._sequences_config[i]
         
