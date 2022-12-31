@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
 from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.cluster import KMeans
 from collections import Counter
 from configuration.phase_conf import sequence_config
 from dtaidistance import dtw
@@ -507,6 +509,7 @@ class executions_analyzer:
         plt.show()
         plt.close()
         '''
+       
         
     def calculate_dtw_metrics(self, phase_conf):
         """For each variable(in self.variables_ids) calculate the distances between the time series on each execution of the phase received.
@@ -564,6 +567,70 @@ class executions_analyzer:
             
             distance_df.to_csv(file_path, index=False, header=False)
                     
-                  
+          
+    def label_executions_with_DBSCAN(self, phase_conf):
+        """
+        Sort out executions of one phase in 2 grups: Good Executions and Fail. 
+        It's done using the DBSCAN algorithmic with the DTW metrics of each variable and the duration in minutes of the phase execution(time serie)
+        Args:
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
+        """
+        
+        data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
+        data_csv = pd.read_csv(data_csv_path)
+        
+        correct_exec_ids = data_csv['ExecutionId'].unique() #satisfy
+                #the minimun of samples and the linear relation between # of samples and
+                # duration of the time serie(in the function: remove_incorrect_time_series(phase_conf))
                     
-         
+        phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
+        phases = pd.read_csv(phase_path)
+        
+        phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
+        phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
+        
+        phases = phases[(phases['Text'] == phase_conf._name) & (phases['ExecutionId'].isin(correct_exec_ids))] #select only the phases 
+                #of the type of phase_conf and that were considerated to the analysis of the time serie
+                
+                
+        duration_in_minutes = [(b - a).total_seconds()/60 for a, b in zip(phases['StartTime'], phases['EndTime'])]
+                                            #divide the diference by 60 seconds to obtain the duration in minutes
+        duratios_df = pd.DataFrame(duration_in_minutes, columns=['DurationMinutes'])
+        
+        distances_dtw = pd.DataFrame()
+        
+        for var_id in self.variables_ids:
+            distances_path = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory
+                                          , f'distances_variable_{var_id}.csv')
+            
+            column_name = ''.join([str('Variable_Id_'), str(var_id)])
+            distances_dtw[column_name] = pd.read_csv(distances_path, header=None) #reading the column with the DTW disctances
+        
+        characteristics = pd.concat([duratios_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
+        
+        scaler = StandardScaler() #mean=0 and std=1
+        #scaler = MinMaxScaler() # 0-1
+        scaler.fit(characteristics)
+        scaled = scaler.fit_transform(characteristics)
+        scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
+        
+        clustering = DBSCAN(eps=3, min_samples=20).fit(scaled_df)
+        
+        labels_dbscan = clustering.labels_
+        
+        true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels_dbscan) #false = fail; true = good execution
+        
+        fail_dbscan = phases[~true_false_labels] #select the false(fail executions of the fase)
+        fail_charac_dbscan = characteristics[~true_false_labels]
+        
+        kmeans = KMeans(n_clusters=2)
+        kmeans.fit(scaled_df)
+        
+        labels_kmean = kmeans.labels_
+        
+        true_false_labels = np.vectorize(lambda value: False if value==1 else True)(labels_kmean) #false = fail; true = good execution
+
+        fail_kmeans = phases[~true_false_labels]
+        fail_charac_kmeans = characteristics[~true_false_labels]
+        
+        pass

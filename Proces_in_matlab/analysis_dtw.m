@@ -19,7 +19,7 @@ location = location + sequence_name + char("Samples Sorts by Phases\")
 for i=7:13
     
     variable = readmatrix(char(string(location)+string(phase)+string(file)+string(i)+string(extension)));      
-    variable = normalize(variable,'range');
+    %variable = normalize(variable,'range');
     p = variable.';
 
     %distance = [];
