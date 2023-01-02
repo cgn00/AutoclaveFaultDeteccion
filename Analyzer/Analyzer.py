@@ -1,17 +1,28 @@
-import pandas as pd
-import numpy as np
-import logging
-import os
-import json
+import pandas as pd # for data manipulation
+import numpy as np # for arrays manipulation
+import logging # to handle errors
+import os # for path manipulation
+import json # to load phase configurations
+from configuration.phase_conf import sequence_config # configuration of the sequence class
+
+from datetime import datetime # to work with Dates 
+
+# for building a clustering model
+from sklearn.cluster import DBSCAN
+from sklearn.cluster import KMeans
+
+# for feature scaling
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
+from collections import Counter
+
+from dtaidistance import dtw # for calculate distances between time series
+
+# for data visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.cluster import KMeans
-from collections import Counter
-from configuration.phase_conf import sequence_config
-from dtaidistance import dtw
+import plotly.graph_objects as go # for data visualization
+import plotly.express as px # for data visualization
 
 class executions_analyzer:
     
@@ -610,7 +621,7 @@ class executions_analyzer:
         
         scaler = StandardScaler() #mean=0 and std=1
         #scaler = MinMaxScaler() # 0-1
-        scaler.fit(characteristics)
+        #scaler.fit(characteristics)
         scaled = scaler.fit_transform(characteristics)
         scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
         
