@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objects as go # for data visualization
 import plotly.express as px # for data visualization
+from plotly.subplots import make_subplots
 
 class executions_analyzer:
     
@@ -626,6 +627,8 @@ class executions_analyzer:
         scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
         
         clustering = DBSCAN(eps=3, min_samples=20).fit(scaled_df)
+        characteristics['DBSCAN Clusters 3-20'] = clustering.labels_ #adding the labels column
+        characteristics = characteristics.sort_values(by=['DBSCAN Clusters 3-20']) # df sorted by labels
         
         labels_dbscan = clustering.labels_
         
@@ -643,5 +646,88 @@ class executions_analyzer:
 
         fail_kmeans = phases[~true_false_labels]
         fail_charac_kmeans = characteristics[~true_false_labels]
+        
+        # Create a 3d scatter plot
+        
+        fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]])
+        
+        '''
+        fig = px.scatter_3d(characteristics, x=characteristics['DurationMinutes'], 
+                            y=characteristics['Variable_Id_7'], z=characteristics['Variable_Id_8'], 
+                            opacity=1, color=characteristics['DBSCAN Clusters 3-20'].astype(str), 
+                            color_discrete_sequence=['black']+px.colors.qualitative.Plotly, 
+                            hover_data=['Variable_Id_9', 'Variable_Id_10', 'Variable_Id_11', 'Variable_Id_12', 'Variable_Id_13'], 
+                            width=900, height=900)
+        
+        fig2 = px.scatter_3d(characteristics, x=characteristics['Variable_Id_7'], 
+                            y=characteristics['Variable_Id_8'], z=characteristics['Variable_Id_9'], 
+                            opacity=1, color=characteristics['DBSCAN Clusters 3-20'].astype(str), 
+                            color_discrete_sequence=['black']+px.colors.qualitative.Plotly, 
+                            hover_data=['DurationMinutes', 'Variable_Id_10', 'Variable_Id_11', 'Variable_Id_12', 'Variable_Id_13'], 
+                            width=900, height=900)
+        
+        '''
+        
+        fig.add_trace(trace=go.Scatter3d(x=characteristics['DurationMinutes'],
+                                        y=characteristics['Variable_Id_7'], z=characteristics['Variable_Id_8'], 
+                                        mode='markers', marker=dict(
+                                                        size=12, 
+                                                        color=characteristics['DBSCAN Clusters 3-20'], 
+                                                        colorscale='viridis', 
+                                                        opacity=0.8)
+                                        ),
+                        row=1, col=1)
+        
+        fig.add_trace(trace=go.Scatter3d(x=characteristics['Variable_Id_8'],
+                                        y=characteristics['Variable_Id_9'], z=characteristics['Variable_Id_10'], 
+                                        mode='markers', marker=dict(
+                                                        size=12, 
+                                                        color=characteristics['DBSCAN Clusters 3-20'], 
+                                                        colorscale='viridis', 
+                                                        opacity=0.8)
+                                        ),
+                        row=1, col=2)
+        
+       
+        # update chart looks
+        fig.update_layout(dict(title_text="Scatter 3D Plot",
+                                showlegend=True,
+                                legend=dict(orientation='h', yanchor='bottom', y=0.04, 
+                                            xanchor='left', x=0.1),
+                                scene_camera=dict(up=dict(x=0, y=0, z=1), 
+                                                center=dict(x=0, y=0, z=-0.2),
+                                                eye=dict(x=1.5, y=1.5, z=0.5)),
+                                                margin=dict(l=0, r=0, b=0, t=0),
+                                scene = dict(xaxis=dict(backgroundcolor='white',
+                                                color='black',
+                                                gridcolor='#f0f0f0',
+                                                title_font=dict(size=10),
+                                                tickfont=dict(size=10),
+                                                title='X AXIS'
+                                                ),
+                                yaxis=dict(backgroundcolor='white',
+                                                color='black',
+                                                gridcolor='#f0f0f0',
+                                                title_font=dict(size=10),
+                                                tickfont=dict(size=10),
+                                                title='Y AXIS'
+                                                ),
+                                zaxis=dict(backgroundcolor='lightgrey',
+                                                color='black', 
+                                                gridcolor='#f0f0f0',
+                                                title_font=dict(size=1),
+                                                tickfont=dict(size=10),
+                                                title='Z AXIS'
+                                         ))))
+        
+        fig.update_scenes(xaxis=dict(title_text='Duration'),
+                          yaxis=dict(title_text='variable_id_7'),
+                          zaxis=dict(title_text='variable_id_8'), row=1, col=2)
+        
+        # update marker size
+        fig.update_traces(marker=dict(size=2))
+        
+        fig.show()
+        
         
         pass
