@@ -51,8 +51,12 @@ class executions_analyzer:
         self._sequence_directory = ''
         self._phases_by_sequence_directory = ''
         
-        self.variables_ids = [7, 8, 9, 10, 11, 12, 13] #these are the ids of the 7 variables(6 temperatures and 1 presure)
-                
+        self._variables_ids = [7, 8, 9, 10, 11, 12, 13] #these are the ids of the 7 variables(6 temperatures and 1 presure)
+        self._variables_names = ['Pres. en cámara', 'Temp. cámara 1', 'Temp. cámara 2', 'Temp. cámara 3', 
+                                'Temp. en salida del intercambiador', 'Temp. producto en bolsa 1', 'Temp. producto en bolsa 2']
+                                # these are the names of the 7 variables, entered in the same order as the variables_ids
+        self._var_id_name_dict = dict(zip(self._variables_ids, self._variables_names)) # dictionary with key(variable_id):value(variable_name)
+                        
         self._sequences_names = list()
         
         self.load_phase_conf_json() #initialize the self._sequences_config obj
@@ -299,7 +303,7 @@ class executions_analyzer:
         samples_path = os.path.join(self._base_directory, self._samples_csv_directory)
         samples = pd.read_csv(samples_path)
         
-        samples = samples[samples['VariableId'].isin(self.variables_ids)]#remove the samples with ids that arn't at self.variables_ids, the 6 temp and 1 presuere
+        samples = samples[samples['VariableId'].isin(self._variables_ids)]#remove the samples with ids that arn't at self.variables_ids, the 6 temp and 1 presuere
         
         phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory))
         
@@ -326,7 +330,7 @@ class executions_analyzer:
                 
         
         headers = ['ExecutionId', 'EntityId', 'Time', 'SampleId']
-        for id in self.variables_ids:
+        for id in self._variables_ids:
             headers.append(str('Variable_Id_' + str(id))) #each variable Id from self.variables_ids will represent a column at the dataframe
                 
         data = pd.DataFrame(columns=headers)
@@ -405,7 +409,7 @@ class executions_analyzer:
         #samples['Time'] = pd.to_datetime(samples['Time'], format=self._date_time_format) #declarate the column 'Time' as DateTime type
         
         headers = ['ExecutionId', 'EntityId', 'Time', 'SampleId']
-        for id in self.variables_ids:
+        for id in self._variables_ids:
             headers.append(str('Variable_Id_' + str(id))) #each variable Id from self.variables_ids will represent a column at the dataframe
                 
         data = pd.DataFrame(columns=headers)
@@ -536,7 +540,7 @@ class executions_analyzer:
         
         executions_ids = data['ExecutionId'].unique()
         
-        for variab_id in self.variables_ids: #iterate over each variableId (7..13)
+        for variab_id in self._variables_ids: #iterate over each variableId (7..13)
             
             path_to_save = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory)
             if(os.path.exists(path_to_save) == False):    
@@ -580,7 +584,7 @@ class executions_analyzer:
             distance_df.to_csv(file_path, index=False, header=False)
                     
           
-    def label_executions_with_DBSCAN(self, phase_conf):
+    def label_executions_with_DBSCAN(self, phase_conf, sequence_name):
         """
         Sort out executions of one phase in 2 grups: Good Executions and Fail. 
         It's done using the DBSCAN algorithmic with the DTW metrics of each variable and the duration in minutes of the phase execution(time serie)
@@ -611,11 +615,13 @@ class executions_analyzer:
         
         distances_dtw = pd.DataFrame()
         
-        for var_id in self.variables_ids:
+        for (var_id, var_name) in self._var_id_name_dict.items():
+            
             distances_path = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory
                                           , f'distances_variable_{var_id}.csv')
             
-            column_name = ''.join([str('Variable_Id_'), str(var_id)])
+            #column_name = ''.join([str('Variable_Id_'), str(var_id)])
+            column_name = var_name
             distances_dtw[column_name] = pd.read_csv(distances_path, header=None) #reading the column with the DTW disctances
         
         characteristics = pd.concat([duratios_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
@@ -626,13 +632,13 @@ class executions_analyzer:
         scaled = scaler.fit_transform(characteristics)
         scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
         
-        clustering = DBSCAN(eps=3, min_samples=20).fit(scaled_df)
-        characteristics['DBSCAN Clusters 3-20'] = clustering.labels_ #adding the labels column
-        characteristics = characteristics.sort_values(by=['DBSCAN Clusters 3-20']) # df sorted by labels
+        clustering = DBSCAN(eps=4, min_samples=15).fit(scaled_df)
+        characteristics['DBSCAN Clusters'] = clustering.labels_ #adding the labels column
+        characteristics = characteristics.sort_values(by=['DBSCAN Clusters']) # df sorted by labels
         
-        labels_dbscan = clustering.labels_
+        labels = clustering.labels_
         
-        true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels_dbscan) #false = fail; true = good execution
+        true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels) #false = fail; true = good execution
         
         fail_dbscan = phases[~true_false_labels] #select the false(fail executions of the fase)
         fail_charac_dbscan = characteristics[~true_false_labels]
@@ -647,87 +653,79 @@ class executions_analyzer:
         fail_kmeans = phases[~true_false_labels]
         fail_charac_kmeans = characteristics[~true_false_labels]
         
+        # Create Parallel Coordinates Plot
+        dimen = characteristics.columns.to_list()
+        parallel_fig = px.parallel_coordinates(characteristics, color='DBSCAN Clusters', dimensions=dimen)
+        parallel_fig.update_layout(dict1=dict(title_text=''.join(['Sequence: ', sequence_name, '\tPhase: ', phase_conf._name, 
+                                                                  '\t--\tGood phases count = ', str(len(labels[labels==0])), #show the numbers of good phases
+                                                                  '\tFailures count = ', str(len(labels[labels==-1]))]), # title of the graph
+                                              title_y=0.05, title_x=0.5, # show the title down and in the center
+                                              coloraxis_showscale=False)) # remove the scale color
+        parallel_fig.show()
+        
         # Create a 3d scatter plot
+        self.__plot_3d_graphs(data=characteristics, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
+  
         
-        fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]])
+        # Private methods:
         
-        '''
-        fig = px.scatter_3d(characteristics, x=characteristics['DurationMinutes'], 
-                            y=characteristics['Variable_Id_7'], z=characteristics['Variable_Id_8'], 
-                            opacity=1, color=characteristics['DBSCAN Clusters 3-20'].astype(str), 
-                            color_discrete_sequence=['black']+px.colors.qualitative.Plotly, 
-                            hover_data=['Variable_Id_9', 'Variable_Id_10', 'Variable_Id_11', 'Variable_Id_12', 'Variable_Id_13'], 
-                            width=900, height=900)
+    def __plot_3d_graphs(self, data, labels, sequence_name, phase_name):
+        """
+        Private method used by the method: label_executions_with_DBSCAN(phase_conf, sequence_name). 
+        Plot 4 gragh in 3d with the characteristics of the dataset in groups of 3 variables
+
+        Parameters:
+        ----------
+            data (data frame): df with the duration and the 7 distances columns(one column for each variable)
+            labels (list): clusters obtainned
+            sequence_name (str): name of the sequence
+            phase_name (str): name of the phase
+        """
+            
+        fig = make_subplots(rows=2, cols=2, specs=[[{'type': 'scene'}, {'type': 'scene'}], [{'type': 'scene'}, {'type': 'scene'}]],
+                            row_heights=[2, 2], column_widths=[8, 8], vertical_spacing=0.06, 
+                            subplot_titles=[''.join(['Sequence: ',sequence_name,'\tPhase: ', phase_name]), # show sequence and phase name
+                                            ''.join(['Good phases count = ', str(len(labels[labels==0])) #show the numbers of good phases
+                                                     , '\tFailures count = ', str(len(labels[labels==-1]))])]) # show the numbers of failures
         
-        fig2 = px.scatter_3d(characteristics, x=characteristics['Variable_Id_7'], 
-                            y=characteristics['Variable_Id_8'], z=characteristics['Variable_Id_9'], 
-                            opacity=1, color=characteristics['DBSCAN Clusters 3-20'].astype(str), 
-                            color_discrete_sequence=['black']+px.colors.qualitative.Plotly, 
-                            hover_data=['DurationMinutes', 'Variable_Id_10', 'Variable_Id_11', 'Variable_Id_12', 'Variable_Id_13'], 
-                            width=900, height=900)
-        
-        '''
-        
-        fig.add_trace(trace=go.Scatter3d(x=characteristics['DurationMinutes'],
-                                        y=characteristics['Variable_Id_7'], z=characteristics['Variable_Id_8'], 
-                                        mode='markers', marker=dict(
-                                                        size=12, 
-                                                        color=characteristics['DBSCAN Clusters 3-20'], 
-                                                        colorscale='viridis', 
-                                                        opacity=0.8)
-                                        ),
-                        row=1, col=1)
-        
-        fig.add_trace(trace=go.Scatter3d(x=characteristics['Variable_Id_8'],
-                                        y=characteristics['Variable_Id_9'], z=characteristics['Variable_Id_10'], 
-                                        mode='markers', marker=dict(
-                                                        size=12, 
-                                                        color=characteristics['DBSCAN Clusters 3-20'], 
-                                                        colorscale='viridis', 
-                                                        opacity=0.8)
-                                        ),
-                        row=1, col=2)
-        
-       
-        # update chart looks
-        fig.update_layout(dict(title_text="Scatter 3D Plot",
-                                showlegend=True,
-                                legend=dict(orientation='h', yanchor='bottom', y=0.04, 
-                                            xanchor='left', x=0.1),
-                                scene_camera=dict(up=dict(x=0, y=0, z=1), 
-                                                center=dict(x=0, y=0, z=-0.2),
-                                                eye=dict(x=1.5, y=1.5, z=0.5)),
-                                                margin=dict(l=0, r=0, b=0, t=0),
-                                scene = dict(xaxis=dict(backgroundcolor='white',
-                                                color='black',
-                                                gridcolor='#f0f0f0',
-                                                title_font=dict(size=10),
-                                                tickfont=dict(size=10),
-                                                title='X AXIS'
-                                                ),
-                                yaxis=dict(backgroundcolor='white',
-                                                color='black',
-                                                gridcolor='#f0f0f0',
-                                                title_font=dict(size=10),
-                                                tickfont=dict(size=10),
-                                                title='Y AXIS'
-                                                ),
-                                zaxis=dict(backgroundcolor='lightgrey',
-                                                color='black', 
-                                                gridcolor='#f0f0f0',
-                                                title_font=dict(size=1),
-                                                tickfont=dict(size=10),
-                                                title='Z AXIS'
-                                         ))))
-        
-        fig.update_scenes(xaxis=dict(title_text='Duration'),
-                          yaxis=dict(title_text='variable_id_7'),
-                          zaxis=dict(title_text='variable_id_8'), row=1, col=2)
-        
-        # update marker size
-        fig.update_traces(marker=dict(size=2))
-        
+        graphics = [dict(x='DurationMinutes', y=self._variables_names[0], z=self._variables_names[1], row=1, column=1), 
+                        dict(x=self._variables_names[1], y=self._variables_names[2], z=self._variables_names[3], row=1, column=2), 
+                        dict(x=self._variables_names[3], y=self._variables_names[4], z=self._variables_names[5], row=2, column=1), 
+                        dict(x=self._variables_names[5], y=self._variables_names[6], z='DurationMinutes', row=2, column=2)]
+            
+        for graph in graphics: # iterate over each graph to plot them
+                
+            # Figure properties
+            scene_prop = dict(xaxis=dict(backgroundcolor='white', color='black', gridcolor='#f0f0f0', title_font=dict(size=10),
+                                         tickfont=dict(size=10), title=graph['x']), 
+                              yaxis=dict(backgroundcolor='white',color='black', gridcolor='#f0f0f0', title_font=dict(size=10),
+                                         tickfont=dict(size=10), title=graph['y']),
+                              zaxis=dict(backgroundcolor='lightgrey', color='black', gridcolor='#f0f0f0', title_font=dict(size=1),
+                                         tickfont=dict(size=10), title=graph['z']))
+                
+            # Ploting the graph 
+            fig.add_trace(trace=go.Scatter3d(x=data[graph['x']],
+                                             y=data[graph['y']], z=data[graph['z']], 
+                                             mode='markers', marker=dict(size=2, color=data['DBSCAN Clusters'], 
+                                                                         colorscale='viridis', opacity=0.8), 
+                                             text='text'
+                                            ), row=graph['row'], col=graph['column']) 
+                
+            fig.update_scenes(patch=scene_prop, row=graph['row'], col=graph['column']) #update the properties
+            
         fig.show()
+            
+        '''    
+        scene_cam_prop = dict(up=dict(x=0, y=0, z=1), center=dict(x=0, y=0, z=-0.2), eye=dict(x=1.5, y=1.5, z=0.5)),
+        margin_prop = dict(l=0, r=0, b=0, t=0)
+        legend_prop = dict(orientation='h', yanchor='bottom', y=0.04, xanchor='left', x=0.1)
+        properies = dict(title_text="Scatter 3D Plot",
+                            showlegend=True, 
+                            legend=legend_prop, 
+                            scene_camera=scene_cam_prop, 
+                            margin=margin_prop, 
+                            scene=scene_prop)
+        '''
         
         
-        pass
+  
