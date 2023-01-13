@@ -11,6 +11,9 @@ from datetime import datetime # to work with Dates
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import KMeans
 
+# for determinate the epsilon in DBSCAN algorithm
+from sklearn.neighbors import NearestNeighbors
+
 # for feature scaling
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
@@ -583,48 +586,49 @@ class executions_analyzer:
             
             distance_df.to_csv(file_path, index=False, header=False)
                     
+    
+    def determinate_epsilon(self, phase_conf):
+        """_summary_
+
+        Find the appropriate epsilon to classify executions with DBSCAN algorithm 
+        
+        Parameters:
+        ----------
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
+        """
+        characteristics = self.__load_characteristics(phase_conf)
+        
+        scaler = StandardScaler() #mean=0 and std=1
+        #scaler = MinMaxScaler() # 0-1
+        #scaler.fit(characteristics)
+        scaled = scaler.fit_transform(characteristics)
+        scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
+        # the min_points of DBSCAN algorithm will be used to determinate the number of neighbors 
+        near_neighbors = NearestNeighbors(n_neighbors=phase_conf._min_points) 
+        
+        near_neighbors = near_neighbors.fit(scaled_df)
+        
+        distances, indices =  near_neighbors.kneighbors(scaled_df)
+        
+        distances = np.sort(distances, axis=0)
+        
+        distances = distances[:, 1]
+        
+        plt.plot(distances)
+    
           
     def label_executions_with_DBSCAN(self, phase_conf, sequence_name):
         """
         Sort out executions of one phase in 2 grups: Good Executions and Fail. 
-        It's done using the DBSCAN algorithmic with the DTW metrics of each variable and the duration in minutes of the phase execution(time serie)
+        It's done using the DBSCAN algorithm with the DTW metrics of each variable and the duration in minutes of the phase execution(time serie)
         Args:
+        ----
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
         """
-        
-        data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
-        data_csv = pd.read_csv(data_csv_path)
-        
-        correct_exec_ids = data_csv['ExecutionId'].unique() #satisfy
-                #the minimun of samples and the linear relation between # of samples and
-                # duration of the time serie(in the function: remove_incorrect_time_series(phase_conf))
-                    
         phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
         phases = pd.read_csv(phase_path)
         
-        phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
-        phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
-        
-        phases = phases[(phases['Text'] == phase_conf._name) & (phases['ExecutionId'].isin(correct_exec_ids))] #select only the phases 
-                #of the type of phase_conf and that were considerated to the analysis of the time serie
-                
-                
-        duration_in_minutes = [(b - a).total_seconds()/60 for a, b in zip(phases['StartTime'], phases['EndTime'])]
-                                            #divide the diference by 60 seconds to obtain the duration in minutes
-        duratios_df = pd.DataFrame(duration_in_minutes, columns=['DurationMinutes'])
-        
-        distances_dtw = pd.DataFrame()
-        
-        for (var_id, var_name) in self._var_id_name_dict.items():
-            
-            distances_path = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory
-                                          , f'distances_variable_{var_id}.csv')
-            
-            #column_name = ''.join([str('Variable_Id_'), str(var_id)])
-            column_name = var_name
-            distances_dtw[column_name] = pd.read_csv(distances_path, header=None) #reading the column with the DTW disctances
-        
-        characteristics = pd.concat([duratios_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
+        characteristics = self.__load_characteristics(phase_conf)
         
         scaler = StandardScaler() #mean=0 and std=1
         #scaler = MinMaxScaler() # 0-1
@@ -668,6 +672,58 @@ class executions_analyzer:
   
         
         # Private methods:
+    
+    def __load_characteristics(self, phase_conf):
+        """
+        Load the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
+        and make a Data frame with them, this df will be used to classify executions with DBSCAN algorithm in label_executions_with_DBSCAN() function
+
+        Args:
+        ----
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
+
+        Returns:
+        -------
+            Data Frame: the columns are: the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
+                        the rows are: the executions of each phase  
+        """
+        
+        data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
+        data_csv = pd.read_csv(data_csv_path)
+        
+        correct_exec_ids = data_csv['ExecutionId'].unique() #satisfy
+                #the minimun of samples and the linear relation between # of samples and
+                # duration of the time serie(in the function: remove_incorrect_time_series(phase_conf))
+                    
+        phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
+        phases = pd.read_csv(phase_path)
+        
+        phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
+        phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
+        
+        phases = phases[(phases['Text'] == phase_conf._name) & (phases['ExecutionId'].isin(correct_exec_ids))] #select only the phases 
+                #of the type of phase_conf and that were considerated to the analysis of the time serie
+                
+                
+        duration_in_minutes = [(b - a).total_seconds()/60 for a, b in zip(phases['StartTime'], phases['EndTime'])]
+                                            #divide the diference by 60 seconds to obtain the duration in minutes
+        durations_df = pd.DataFrame(duration_in_minutes, columns=['DurationMinutes'])
+        
+        distances_dtw = pd.DataFrame()
+        
+        for (var_id, var_name) in self._var_id_name_dict.items(): #iterate over each variable to obtain the dtw metrics
+            
+            distances_path = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory
+                                          , f'distances_variable_{var_id}.csv')
+            
+            #column_name = ''.join([str('Variable_Id_'), str(var_id)])
+            column_name = var_name
+            distances_dtw[column_name] = pd.read_csv(distances_path, header=None) #reading the column with the DTW disctances
+        
+        characteristics = pd.concat([durations_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
+        
+        return characteristics
+    
         
     def __plot_3d_graphs(self, data, labels, sequence_name, phase_name):
         """

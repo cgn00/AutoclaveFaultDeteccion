@@ -6,6 +6,8 @@ class phase_config:
         self._name = phase_conf['name']
         self._samples_count = phase_conf['selection_criteria']['samples_count']
         self._time_duration = phase_conf['selection_criteria']['time_duration']
+        self._epsilon = phase_conf['dbscan_parameters']['epsilon']
+        self._min_points = phase_conf['dbscan_parameters']['_min_points']
 
 class sequence_config:
     """This class is a list with the phases config of one sequence
