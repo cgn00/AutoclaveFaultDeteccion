@@ -508,8 +508,8 @@ class executions_analyzer:
         
         clusters = DBSCAN(eps=3.5, min_samples=5).fit(data_durations)
         
-        '''
-        plt.subplot(2, 1, 1)
+        """        
+        plt.subplot2grid((2, 2), (0, 0), colspan=1, rowspan=1)
         p = sns.scatterplot(data=data_durations, x="time", y="num_samp" ,hue=clusters.labels_, legend="full", palette="deep")
         #sns.move_legend(p, loc = "upper right", bbox_to_anchor = (1.17, 1.12), title = 'Clusters')
         plt.title("Sequence: " + sequence_name + "\nPhase: " + phase_conf._name + "\n" + str(Counter(clusters.labels_)))
@@ -517,14 +517,18 @@ class executions_analyzer:
         
         plt.plot(time_serie_duration_minutes, y)
         
-        plt.subplot(2, 1, 2)
+        plt.subplot2grid((2, 2), (1, 0), colspan=1, rowspan=1)
         plt.scatter(time_serie_duration_minutes, error, marker='.')
         plt.plot(x, mean)
         plt.plot(x, mean + std, color='red', linestyle='dashed')
         plt.plot(x, mean - std, color='red', linestyle='dashed')
+        
+        plt.subplot2grid((2, 2), (0, 1), colspan=1, rowspan=2)
+        plt.hist(time_serie_duration_minutes, bins=int(np.ceil(np.log2(time_serie_duration_minutes.shape[0])) + 1), density=True)
+        
         plt.show()
         plt.close()
-        '''
+        """
        
         
     def calculate_dtw_metrics(self, phase_conf):
@@ -636,6 +640,8 @@ class executions_analyzer:
         characteristics['DBSCAN Clusters'] = clustering.labels_ #adding the labels column
         characteristics = characteristics.sort_values(by=['DBSCAN Clusters']) # df sorted by labels
         
+        scaled_df['DBSCAN Clusters'] = clustering.labels_
+        
         labels = clustering.labels_
         
         true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels) #false = fail; true = good execution
@@ -654,8 +660,8 @@ class executions_analyzer:
         fail_charac_kmeans = characteristics[~true_false_labels]
         
         # Create Parallel Coordinates Plot
-        dimen = characteristics.columns.to_list()
-        parallel_fig = px.parallel_coordinates(characteristics, color='DBSCAN Clusters', dimensions=dimen)
+        dimen = scaled_df.columns.to_list()
+        parallel_fig = px.parallel_coordinates(scaled_df, color='DBSCAN Clusters', dimensions=dimen)
         parallel_fig.update_layout(dict1=dict(title_text=''.join(['Sequence: ', sequence_name, '\tPhase: ', phase_conf._name, 
                                                                   '\t--\tGood phases count = ', str(len(labels[labels==0])), #show the numbers of good phases
                                                                   '\tFailures count = ', str(len(labels[labels==-1]))]), # title of the graph
@@ -664,7 +670,7 @@ class executions_analyzer:
         parallel_fig.show()
         
         # Create a 3d scatter plot
-        self.__plot_3d_graphs(data=characteristics, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
+        self.__plot_3d_graphs(data=scaled_df, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
   
         
         # Private methods:
