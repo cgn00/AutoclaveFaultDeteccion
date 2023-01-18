@@ -11,6 +11,11 @@
                     {
                         "samples_count": 10,
                         "time_duration": 5
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -19,6 +24,11 @@
                     {
                         "samples_count": 4,
                         "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -27,6 +37,11 @@
                     {
                         "samples_count": 10,
                         "time_duration": 5
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -35,6 +50,11 @@
                     {
                         "samples_count": 10,
                         "time_duration": 5
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -43,6 +63,11 @@
                     {
                         "samples_count": 1,
                         "time_duration": 0
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -51,6 +76,11 @@
                     {
                         "samples_count": 4,
                         "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -59,6 +89,11 @@
                     {
                         "samples_count": 2,
                         "time_duration": 1
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 }
             ]
@@ -73,6 +108,11 @@
                     {
                         "samples_count": 4,
                         "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -81,6 +121,11 @@
                     {
                         "samples_count": 4,
                         "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -89,6 +134,11 @@
                     {
                         "samples_count": 1,
                         "time_duration": 0
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 },
                 {
@@ -97,6 +147,11 @@
                     {
                         "samples_count": 2,
                         "time_duration": 1
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
                     }
                 }
             ]

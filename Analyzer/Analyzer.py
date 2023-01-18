@@ -11,6 +11,9 @@ from datetime import datetime # to work with Dates
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import KMeans
 
+# for determinate the epsilon in DBSCAN algorithm
+from sklearn.neighbors import NearestNeighbors
+
 # for feature scaling
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
@@ -587,13 +590,113 @@ class executions_analyzer:
             
             distance_df.to_csv(file_path, index=False, header=False)
                     
+    
+    def determinate_epsilon(self, phase_conf, sequence_name):
+        """_summary_
+
+        Find the appropriate epsilon to classify executions with DBSCAN algorithm 
+        
+        Parameters:
+        ----------
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
+        """
+        characteristics = self.__load_data(phase_conf)
+        
+        scaler = StandardScaler() #mean=0 and std=1
+        #scaler = MinMaxScaler() # 0-1
+        #scaler.fit(characteristics)
+        scaled = scaler.fit_transform(characteristics)
+        scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
+        # the min_points of DBSCAN algorithm will be used to determinate the number of neighbors 
+        near_neighbors = NearestNeighbors(n_neighbors=phase_conf._min_points) 
+        
+        near_neighbors = near_neighbors.fit(scaled_df)
+        
+        distances, indices =  near_neighbors.kneighbors(scaled_df)
+        
+        distances = np.sort(distances, axis=0)
+        
+        distances = distances[:, 1]
+        
+        plt.plot(distances)
+        plt.title("Sequence: " + sequence_name + "\nPhase: " + phase_conf._name)
+        plt.show()
+    
           
     def label_executions_with_DBSCAN(self, phase_conf, sequence_name):
         """
         Sort out executions of one phase in 2 grups: Good Executions and Fail. 
-        It's done using the DBSCAN algorithmic with the DTW metrics of each variable and the duration in minutes of the phase execution(time serie)
+        It's done using the DBSCAN algorithm with the DTW metrics of each variable and the duration in minutes of the phase execution(time serie)
         Args:
+        ----
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
+        """
+       
+        characteristics, phases = self.__load_data(phase_conf)
+        
+        scaler = StandardScaler() #mean=0 and std=1
+        #scaler = MinMaxScaler() # 0-1
+        #scaler.fit(characteristics)
+        scaled = scaler.fit_transform(characteristics)
+        scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
+        
+        clustering = DBSCAN(eps=4, min_samples=15).fit(scaled_df)
+        
+        #adding the labels column
+        characteristics['DBSCAN Clusters'] = clustering.labels_ 
+        scaled_df['DBSCAN Clusters'] = clustering.labels_
+        
+        characteristics = characteristics.sort_values(by=['DBSCAN Clusters']) # df sorted by labels
+        
+        labels = clustering.labels_
+        
+        true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels) #false = fail; true = good execution
+        
+        fail_dbscan = phases[~true_false_labels] #select the false(fail executions of the fase)
+        fail_charac_dbscan = characteristics[~true_false_labels]
+        
+        kmeans = KMeans(n_clusters=2)
+        kmeans.fit(scaled_df)
+        
+        labels_kmean = kmeans.labels_
+        
+        true_false_labels = np.vectorize(lambda value: False if value == 1 else True)(labels_kmean) #false = fail; true = good execution
+
+        fail_kmeans = phases[~true_false_labels]
+        fail_charac_kmeans = characteristics[~true_false_labels]
+        
+        # Create Parallel Coordinates Plot
+        dimen = scaled_df.columns.to_list()
+        parallel_fig = px.parallel_coordinates(scaled_df, color='DBSCAN Clusters', dimensions=dimen)
+        parallel_fig.update_layout(dict1=dict(title_text=''.join(['Sequence: ', sequence_name, '\tPhase: ', phase_conf._name, 
+                                                                  '\t--\tGood phases count = ', str(len(labels[labels==0])), #show the numbers of good phases
+                                                                  '\tFailures count = ', str(len(labels[labels==-1]))]), # title of the graph
+                                              title_y=0.05, title_x=0.5, # show the title down and in the center
+                                              coloraxis_showscale=False)) # remove the scale color
+        parallel_fig.show()
+        
+        # Create a 3d scatter plot
+        self.__plot_3d_graphs(data=scaled_df, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
+  
+        
+    # Private methods:
+    
+    def __load_data(self, phase_conf):
+        """
+        Load the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
+        and make a Data frame with them, this df will be used to classify executions with DBSCAN algorithm in label_executions_with_DBSCAN() function
+
+        Also load the executions of the phase:(phase_conf) that were considerated to the analysis of the time serie
+        
+        Args:
+        ----
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
+
+        Returns:
+        -------
+            characteristics: (Data Frame): the columns are: the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
+                        the rows are: the executions of each phase  
+            phases: the phases of the type of phase_conf and that were considerated to the analysis of the time serie
         """
         
         data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
@@ -615,11 +718,11 @@ class executions_analyzer:
                 
         duration_in_minutes = [(b - a).total_seconds()/60 for a, b in zip(phases['StartTime'], phases['EndTime'])]
                                             #divide the diference by 60 seconds to obtain the duration in minutes
-        duratios_df = pd.DataFrame(duration_in_minutes, columns=['DurationMinutes'])
+        durations_df = pd.DataFrame(duration_in_minutes, columns=['DurationMinutes'])
         
         distances_dtw = pd.DataFrame()
         
-        for (var_id, var_name) in self._var_id_name_dict.items():
+        for (var_id, var_name) in self._var_id_name_dict.items(): #iterate over each variable to obtain the dtw metrics
             
             distances_path = os.path.join(self._sequence_directory, phase_conf._name, self._distances_dtw_directory
                                           , f'distances_variable_{var_id}.csv')
@@ -628,52 +731,10 @@ class executions_analyzer:
             column_name = var_name
             distances_dtw[column_name] = pd.read_csv(distances_path, header=None) #reading the column with the DTW disctances
         
-        characteristics = pd.concat([duratios_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
+        characteristics = pd.concat([durations_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
         
-        scaler = StandardScaler() #mean=0 and std=1
-        #scaler = MinMaxScaler() # 0-1
-        #scaler.fit(characteristics)
-        scaled = scaler.fit_transform(characteristics)
-        scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
-        
-        clustering = DBSCAN(eps=4, min_samples=15).fit(scaled_df)
-        characteristics['DBSCAN Clusters'] = clustering.labels_ #adding the labels column
-        characteristics = characteristics.sort_values(by=['DBSCAN Clusters']) # df sorted by labels
-        
-        scaled_df['DBSCAN Clusters'] = clustering.labels_
-        
-        labels = clustering.labels_
-        
-        true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels) #false = fail; true = good execution
-        
-        fail_dbscan = phases[~true_false_labels] #select the false(fail executions of the fase)
-        fail_charac_dbscan = characteristics[~true_false_labels]
-        
-        kmeans = KMeans(n_clusters=2)
-        kmeans.fit(scaled_df)
-        
-        labels_kmean = kmeans.labels_
-        
-        true_false_labels = np.vectorize(lambda value: False if value==1 else True)(labels_kmean) #false = fail; true = good execution
-
-        fail_kmeans = phases[~true_false_labels]
-        fail_charac_kmeans = characteristics[~true_false_labels]
-        
-        # Create Parallel Coordinates Plot
-        dimen = scaled_df.columns.to_list()
-        parallel_fig = px.parallel_coordinates(scaled_df, color='DBSCAN Clusters', dimensions=dimen)
-        parallel_fig.update_layout(dict1=dict(title_text=''.join(['Sequence: ', sequence_name, '\tPhase: ', phase_conf._name, 
-                                                                  '\t--\tGood phases count = ', str(len(labels[labels==0])), #show the numbers of good phases
-                                                                  '\tFailures count = ', str(len(labels[labels==-1]))]), # title of the graph
-                                              title_y=0.05, title_x=0.5, # show the title down and in the center
-                                              coloraxis_showscale=False)) # remove the scale color
-        parallel_fig.show()
-        
-        # Create a 3d scatter plot
-        self.__plot_3d_graphs(data=scaled_df, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
-  
-        
-        # Private methods:
+        return characteristics, phases
+    
         
     def __plot_3d_graphs(self, data, labels, sequence_name, phase_name):
         """

@@ -30,7 +30,7 @@ try:
             analyzer.filter_samples_by_phases(phase_conf)
             analyzer.remove_incorrect_time_series(phase_conf, seq_conf._sequence_name)
             analyzer.calculate_dtw_metrics(phase_conf)
-            #analyzer.determinate_epsilon(phase_conf)
+            #analyzer.determinate_epsilon(phase_conf, seq_conf._sequence_name)
             analyzer.label_executions_with_DBSCAN(phase_conf, seq_conf._sequence_name)
                 
     conf = analyzer._sequences_config        
