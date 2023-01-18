@@ -587,7 +587,7 @@ class executions_analyzer:
             distance_df.to_csv(file_path, index=False, header=False)
                     
     
-    def determinate_epsilon(self, phase_conf):
+    def determinate_epsilon(self, phase_conf, sequence_name):
         """_summary_
 
         Find the appropriate epsilon to classify executions with DBSCAN algorithm 
@@ -615,6 +615,8 @@ class executions_analyzer:
         distances = distances[:, 1]
         
         plt.plot(distances)
+        plt.title("Sequence: " + sequence_name + "\nPhase: " + phase_conf._name)
+        plt.show()
     
           
     def label_executions_with_DBSCAN(self, phase_conf, sequence_name):
@@ -652,7 +654,7 @@ class executions_analyzer:
         
         labels_kmean = kmeans.labels_
         
-        true_false_labels = np.vectorize(lambda value: False if value==1 else True)(labels_kmean) #false = fail; true = good execution
+        true_false_labels = np.vectorize(lambda value: False if value == 1 else True)(labels_kmean) #false = fail; true = good execution
 
         fail_kmeans = phases[~true_false_labels]
         fail_charac_kmeans = characteristics[~true_false_labels]
