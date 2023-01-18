@@ -596,7 +596,7 @@ class executions_analyzer:
         ----------
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
         """
-        characteristics = self.__load_characteristics(phase_conf)
+        characteristics = self.__load_data(phase_conf)
         
         scaler = StandardScaler() #mean=0 and std=1
         #scaler = MinMaxScaler() # 0-1
@@ -627,10 +627,8 @@ class executions_analyzer:
         ----
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
         """
-        phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
-        phases = pd.read_csv(phase_path)
-        
-        characteristics = self.__load_characteristics(phase_conf)
+       
+        characteristics, phases = self.__load_data(phase_conf)
         
         scaler = StandardScaler() #mean=0 and std=1
         #scaler = MinMaxScaler() # 0-1
@@ -639,9 +637,13 @@ class executions_analyzer:
         scaled_df = pd.DataFrame(scaled, columns=characteristics.columns)
         
         clustering = DBSCAN(eps=4, min_samples=15).fit(scaled_df)
-        characteristics['DBSCAN Clusters'] = clustering.labels_ #adding the labels column
-        characteristics = characteristics.sort_values(by=['DBSCAN Clusters']) # df sorted by labels
         
+        #adding the labels column
+        characteristics['DBSCAN Clusters'] = clustering.labels_ 
+        scaled_df['DBSCAN Clusters'] = clustering.labels_
+        
+        characteristics = characteristics.sort_values(by=['DBSCAN Clusters']) # df sorted by labels
+                
         labels = clustering.labels_
         
         true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels) #false = fail; true = good execution
@@ -660,8 +662,8 @@ class executions_analyzer:
         fail_charac_kmeans = characteristics[~true_false_labels]
         
         # Create Parallel Coordinates Plot
-        dimen = characteristics.columns.to_list()
-        parallel_fig = px.parallel_coordinates(characteristics, color='DBSCAN Clusters', dimensions=dimen)
+        dimen = scaled_df.columns.to_list()
+        parallel_fig = px.parallel_coordinates(scaled_df, color='DBSCAN Clusters', dimensions=dimen)
         parallel_fig.update_layout(dict1=dict(title_text=''.join(['Sequence: ', sequence_name, '\tPhase: ', phase_conf._name, 
                                                                   '\t--\tGood phases count = ', str(len(labels[labels==0])), #show the numbers of good phases
                                                                   '\tFailures count = ', str(len(labels[labels==-1]))]), # title of the graph
@@ -670,24 +672,27 @@ class executions_analyzer:
         parallel_fig.show()
         
         # Create a 3d scatter plot
-        self.__plot_3d_graphs(data=characteristics, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
+        self.__plot_3d_graphs(data=scaled_df, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
   
         
-        # Private methods:
+    # Private methods:
     
-    def __load_characteristics(self, phase_conf):
+    def __load_data(self, phase_conf):
         """
         Load the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
         and make a Data frame with them, this df will be used to classify executions with DBSCAN algorithm in label_executions_with_DBSCAN() function
 
+        Also load the executions of the phase:(phase_conf) that were considerated to the analysis of the time serie
+        
         Args:
         ----
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
 
         Returns:
         -------
-            Data Frame: the columns are: the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
+            characteristics: (Data Frame): the columns are: the Drations in minutes of each execution of a phase and the distances(dtw) of the times series of each variable
                         the rows are: the executions of each phase  
+            phases: the phases of the type of phase_conf and that were considerated to the analysis of the time serie
         """
         
         data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
@@ -724,7 +729,7 @@ class executions_analyzer:
         
         characteristics = pd.concat([durations_df, distances_dtw], axis=1) #the dataframe with the 7 columns of the distances and the column of the durations
         
-        return characteristics
+        return characteristics, phases
     
         
     def __plot_3d_graphs(self, data, labels, sequence_name, phase_name):
