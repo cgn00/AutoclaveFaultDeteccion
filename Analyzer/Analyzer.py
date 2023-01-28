@@ -323,15 +323,14 @@ class executions_analyzer:
         sorted_samples = samples.sort_values(by=['Time']) # sort ascending the samples by time
         
         start = all_exec_of_one_phase['StartTime'].iloc[0] 
-        end = all_exec_of_one_phase['EndTime'].iloc[all_exec_of_one_phase.__len__()-1]
+        end = all_exec_of_one_phase['EndTime'].iloc[all_exec_of_one_phase.__len__() - 1]
         
         correct_samples = sorted_samples[(sorted_samples['Time'] >= start) & (sorted_samples['Time'] <= end)] #these are all the samples in the range of the actual phase start and end time of the first and last execution,
                             #but aren't labeled by ExecutionId or EntityId yet, there are also samples that doesn't belong to the phase that will be removed later
         
         correct_samples.loc[:, 'EntityId'] = np.nan #this column is the unique id of the phase execution
         correct_samples.loc[:, 'ExecutionId'] = np.nan #this column is the id of the entire execution (an execution contains diferents EntityId, one for each phase executed in the execution)
-                
-        
+                        
         headers = ['ExecutionId', 'EntityId', 'Time', 'SampleId']
         for id in self._variables_ids:
             headers.append(str('Variable_Id_' + str(id))) #each variable Id from self.variables_ids will represent a column at the dataframe
@@ -340,15 +339,13 @@ class executions_analyzer:
         data['Time'] = pd.to_datetime(data['Time'],format=self._date_time_format)
         
         data['Time'] = correct_samples['Time'].unique() #assign the time of each sample
-        
-                
+                        
         for index, phase_row in all_exec_of_one_phase.iterrows(): #iterate over each phase execution to assign the ExecutionId and EntityId to each sample
             boolean = (correct_samples['Time'] >= phase_row.loc['StartTime']) & (correct_samples['Time'] < phase_row.loc['EndTime']) #return a true and false column with the samples of the actual phase execution
             
             correct_samples.loc[boolean, 'EntityId'] = phase_row['EntityId'] #assign the EntityId and the ExecutionId to the samples of the actual phase execution
             correct_samples.loc[boolean, 'ExecutionId'] = phase_row['ExecutionId']
-            
-            
+                        
             time_serie = correct_samples[boolean] #this is the time serie with all the samples of all the variables of the actual phase execution
             
             samples_times = time_serie['Time'].unique() #these are the time when were taked the measurement of each variable
@@ -367,7 +364,6 @@ class executions_analyzer:
                 data.loc[location, 'EntityId'] = phase_row.loc['EntityId']
                 data.loc[location, 'SampleId'] = sample_id # assign 'SampleId'
                 
-                               
                 for sample in measure_of_one_time.itertuples(index=False): #iterate over each variable of the samples that were measured in the actual time
                     variableId_position = str('Variable_Id_' + str(sample[2])) #the varible id of the sample will say to wich column at the data(dataframe) assign the value of the sample
                     data.loc[location, variableId_position] = sample[1] # the data at the column that correspond with the variableId of the sample will be assigned the value of this measurement
@@ -457,18 +453,19 @@ class executions_analyzer:
         
         data_path = os.path.join(self._sequence_directory, phase_conf._name, phase_conf._name +  '_data.csv')
         
-        phases = pd.read_csv(os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory))
+        phases_path = os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory)
+        phases = pd.read_csv(phases_path)
         phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
         phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
         
-        phases = phases[phases['Text'] == phase_conf._name] #select only the phases of the type of phase_conf
+        selected_phases = phases[phases['Text'] == phase_conf._name] #select only the phases of the type of phase_conf
         
         #duration = phases['EndTime'] - phases['StartTime']
                       
-        boolean = (phases['SampleCount'] >= phase_conf._samples_count) #remove the time series that not satisfy the minimun number of samples of the phase
+        boolean = (selected_phases['SampleCount'] >= phase_conf._samples_count) #remove the time series that not satisfy the minimun number of samples of the phase
         
-        corrects_phases = phases.loc[boolean]
-        bad_phases = phases.loc[~boolean]
+        corrects_phases = selected_phases.loc[boolean]
+        bad_phases = selected_phases.loc[~boolean]
         
         time_serie_duration_minutes = corrects_phases.apply(lambda row: (row['EndTime'] - row['StartTime']).total_seconds() /60
                                                    , axis=1) #the duration in minutes of each execution of the phase(the time serie of the samples)
@@ -504,6 +501,13 @@ class executions_analyzer:
         good_data = data.drop(index=index_to_drop) #this is the data of the time serie with the good executions ids(removed the bad executions ids)
         
         good_data.to_csv(data_path, index=False, header=True) #saving the good data as data.csv
+        
+        # add the column 'Classification' with value of -1(fail) to the phases that were removed from the analysis
+        index = bad_phases.index
+        phases.loc[index, 'Classification'] = -1 # -1 means that the execution of the phase was a fail
+        
+        # save the phases in a csv
+        phases.to_csv(phases_path, index=False, header=True)
         
         #---VISUALIZATION---
         data_durations = pd.concat([time_serie_duration_minutes, time_serie_number_of_samples], axis=1,)
@@ -632,7 +636,7 @@ class executions_analyzer:
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
         """
        
-        characteristics, phases = self.__load_data(phase_conf)
+        characteristics, selected_phases = self.__load_data(phase_conf)
         
         scaler = StandardScaler() #mean=0 and std=1
         #scaler = MinMaxScaler() # 0-1
@@ -652,7 +656,7 @@ class executions_analyzer:
         
         true_false_labels = np.vectorize(lambda value: False if value==-1 else True)(labels) #false = fail; true = good execution
         
-        fail_dbscan = phases[~true_false_labels] #select the false(fail executions of the fase)
+        fail_dbscan = selected_phases[~true_false_labels] #select the false(fail executions of the fase)
         fail_charac_dbscan = characteristics[~true_false_labels]
         
         kmeans = KMeans(n_clusters=2)
@@ -662,8 +666,18 @@ class executions_analyzer:
         
         true_false_labels = np.vectorize(lambda value: False if value == 1 else True)(labels_kmean) #false = fail; true = good execution
 
-        fail_kmeans = phases[~true_false_labels]
+        fail_kmeans = selected_phases[~true_false_labels]
         fail_charac_kmeans = characteristics[~true_false_labels]
+        
+        # load all the phases to add to the column "Classification" that says if the execution is a fail or good
+        phases_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
+        phases = pd.read_csv(phases_path)
+        
+        index = selected_phases.index # select the rows that were selected to the cluster analysis
+        phases.loc[index, 'Classification'] = clustering.labels_
+                
+        # save the classification column
+        phases.to_csv(phases_path, index=False, header=True)
         
         # Create Parallel Coordinates Plot
         dimen = scaled_df.columns.to_list()
@@ -677,8 +691,48 @@ class executions_analyzer:
         
         # Create a 3d scatter plot
         self.__plot_3d_graphs(data=scaled_df, labels=labels, sequence_name=sequence_name, phase_name=phase_conf._name)
-  
+
+    
+    def plot_time_series(self, phase_conf, sequence_name):
+        """
+
+        Args:
+        ----
+            phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase      
+
+        """
         
+        # load the phases file
+        phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
+        phases = pd.read_csv(phase_path)
+        
+        # load the file where are saved the time series splited of each execution of a phase
+        data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
+        data = pd.read_csv(data_csv_path)
+        
+        data['Time'] = pd.to_datetime(data['Time'], format=self._date_time_format)
+        
+        # select the phases named as the phase_conf recived
+        selected_phases = phases[phases['Text'] == phase_conf._name]
+        
+        # obtain the good and failed phases 
+        good_phases = selected_phases[selected_phases['Classification'] != -1]
+        
+        failed_phases = selected_phases[selected_phases['Classification'] == -1] # the EntityId labeled as fault by the functions: self.remove_incorrect_time_series() and self.label_executions_with_DBSCAN() 
+        
+        # select only the EntityIds that were labeled as fault with the DBSCAN clustering
+        failed_phases = failed_phases[failed_phases['EntityId'].isin(data.loc[:, 'EntityId'].tolist())] 
+        
+        # obtain the time serie
+        failed_entity_ids =  failed_phases.loc[:, 'EntityId'] # obtain the entity id of the failed phases
+        good_entity_ids = good_phases.loc[:, 'EntityId'] # obtain the entity id of the good phases
+        
+        self.__plot_fault_time_series(sequence_name, phase_conf, data, failed_entity_ids)
+        
+        self.__plot_corrects_time_series(sequence_name, phase_conf, data, good_entity_ids)
+
+        
+    
     # Private methods:
     
     def __load_data(self, phase_conf):
@@ -703,7 +757,7 @@ class executions_analyzer:
         data_csv = pd.read_csv(data_csv_path)
         
         correct_exec_ids = data_csv['ExecutionId'].unique() #satisfy
-                #the minimun of samples and the linear relation between # of samples and
+                #the minimun number of samples and the linear relation between # of samples and
                 # duration of the time serie(in the function: remove_incorrect_time_series(phase_conf))
                     
         phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
@@ -794,5 +848,104 @@ class executions_analyzer:
                             scene=scene_prop)
         '''
         
+    
+    def __plot_fault_time_series(self, sequence_name, phase_conf, data, failed_entity_ids):
+        """
+        Private method used by the method: plot_time_series(self, phase_conf, sequence_name).
+        Make 7 subplots, one for each variable with the time serie of the fault EntityId
         
-  
+        Args:
+        ----
+            sequence_name (str): name of the sequence
+            phase_name (str): name of the phase
+            data (df): data frame with the time serie of the executions
+            failed_entity_ids (_type_): contains the EntityId of the failures
+        """
+        
+        plot_index = 0
+        
+        for (var_id, var_name) in self._var_id_name_dict.items(): #iterate over each variableId (7..13)
+            plot_index += 1
+            
+            time_series_list = []
+            duration_time_series = []
+            
+            for entity_id in failed_entity_ids: #iterate over each execution to obtain the time serie of each execution
+                
+                temp_condition = data['EntityId'] ==  entity_id
+                
+                temp_time_serie = data.loc[temp_condition, f'Variable_Id_{var_id}'].to_numpy() #obtain the time serie of the variable in the iteration
+                
+                times = data.loc[temp_condition, 'Time'].to_numpy() # obtain the times when the samples were taked 
+                
+                temp_duration = times[times.__len__() - 1] - times[0] # the duration is the: (end date - beging date)
+                
+                # convert the duration from nano seconds to minutes
+                temp_duration = np.timedelta64(temp_duration, 'm').astype(float)
+                
+                time_series_list.append(temp_time_serie) #add the time serie to the list of this execution
+                
+                duration_time_series.append(temp_duration)
+
+            # plot time series
+            
+            sub_plot = plt.subplot(3, 3, plot_index)
+            sub_plot.set_xbound(0.0, max(duration_time_series))
+                        
+            for time_serie in time_series_list: plt.plot(time_serie) # plot each time serie
+            plt.ylabel(var_name)
+            
+            
+        plt. title(f'Sequence: {sequence_name} \t Phase: {phase_conf._name}')
+        plt.show()
+    
+    
+    def __plot_corrects_time_series(self, sequence_name, phase_conf, data, good_entity_ids):
+        """
+        Private method used by the method: plot_time_series(self, phase_conf, sequence_name).
+        Make 7 subplots, one for each variable with the time serie of the good EntityId
+        
+        Args:
+        ----
+            sequence_name (str): name of the sequence
+            phase_name (str): name of the phase
+            data (df): data frame with the time serie of the executions
+            good_entity_ids (_type_): contains the EntityId of the corrects executions
+        """
+        
+        plot_index = 0
+        
+        for (var_id, var_name) in self._var_id_name_dict.items(): #iterate over each variableId (7..13)
+            plot_index += 1
+            
+            time_series_list = []
+            duration_time_series = []
+            
+            for entity_id in good_entity_ids: #iterate over each execution to obtain the time serie of each execution
+               
+                temp_condition = data['EntityId'] ==  entity_id
+                
+                temp_time_serie = data.loc[temp_condition, f'Variable_Id_{var_id}'].to_numpy() #obtain the time serie of the variable in the iteration
+                
+                times = data.loc[temp_condition, 'Time'].to_numpy() # obtain the times when the samples were taked 
+                
+                temp_duration = times[times.__len__() - 1] - times[0] # the duration is the: (end date - beging date)
+                
+                # convert the duration from nano seconds to minutes
+                temp_duration = np.timedelta64(temp_duration, 'm').astype(float)
+                
+                time_series_list.append(temp_time_serie) #add the time serie to the list of this execution
+                
+                duration_time_series.append(temp_duration)
+
+            # plot time series
+            
+            sub_plot = plt.subplot(3, 3, plot_index)
+            sub_plot.set_xbound(0.0, max(duration_time_series))
+                        
+            for time_serie in time_series_list: plt.plot(time_serie) # plot each time serie
+            plt.ylabel(var_name)
+            
+            
+        plt. title(f'Sequence: {sequence_name} \t Phase: {phase_conf._name}')
+        plt.show()

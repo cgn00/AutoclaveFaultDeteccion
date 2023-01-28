@@ -32,6 +32,7 @@ try:
             analyzer.calculate_dtw_metrics(phase_conf)
             #analyzer.determinate_epsilon(phase_conf, seq_conf._sequence_name)
             analyzer.label_executions_with_DBSCAN(phase_conf, seq_conf._sequence_name)
+            analyzer.plot_time_series(phase_conf, seq_conf._sequence_name)
                 
     conf = analyzer._sequences_config        
     
