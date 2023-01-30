@@ -345,7 +345,7 @@ class executions_analyzer:
             
             correct_samples.loc[boolean, 'EntityId'] = phase_row['EntityId'] #assign the EntityId and the ExecutionId to the samples of the actual phase execution
             correct_samples.loc[boolean, 'ExecutionId'] = phase_row['ExecutionId']
-                        
+            
             time_serie = correct_samples[boolean] #this is the time serie with all the samples of all the variables of the actual phase execution
             
             samples_times = time_serie['Time'].unique() #these are the time when were taked the measurement of each variable
@@ -489,14 +489,14 @@ class executions_analyzer:
         
         bad_phases = bad_phases.append(corrects_phases[~(error < (error.mean() + error.std())) & (error > (error.mean() - error.std()))])#obtain the executions of the phases that are outside the mean +- std of the error 
                                     #(the ~ negate the true-false serie and give the opositive)  
-        bad_executions_ids = bad_phases['ExecutionId']
+        bad_entity_ids = bad_phases['EntityId']
         
         corrects_phases = corrects_phases[(error < (error.mean() + error.std())) & (error > (error.mean() - error.std()))] #remove the executions of the phases that are outside the mean +- std of the error       
-        good_executions_ids = corrects_phases['ExecutionId']
+        good_entity_ids = corrects_phases['EntityId']
         
         data = pd.read_csv(data_path) #read the data to remove the time serie with bad executions ids
         
-        index_to_drop = data[data['ExecutionId'].isin(bad_executions_ids)].index
+        index_to_drop = data[data['EntityId'].isin(bad_entity_ids)].index
         
         good_data = data.drop(index=index_to_drop) #this is the data of the time serie with the good executions ids(removed the bad executions ids)
         
@@ -510,7 +510,7 @@ class executions_analyzer:
         phases.to_csv(phases_path, index=False, header=True)
         
         #---VISUALIZATION---
-        data_durations = pd.concat([time_serie_duration_minutes, time_serie_number_of_samples], axis=1,)
+        data_durations = pd.concat([time_serie_duration_minutes, time_serie_number_of_samples], axis=1)
         data_durations.columns = ['time', 'num_samp']
         
         clusters = DBSCAN(eps=3.5, min_samples=5).fit(data_durations)
@@ -756,8 +756,8 @@ class executions_analyzer:
         data_csv_path = os.path.join(self._sequence_directory, phase_conf._name, f'{phase_conf._name}_data.csv')
         data_csv = pd.read_csv(data_csv_path)
         
-        correct_exec_ids = data_csv['ExecutionId'].unique() #satisfy
-                #the minimun number of samples and the linear relation between # of samples and
+        correct_entity_ids = data_csv['EntityId'].unique() #satisfy
+                # the minimun number of samples and the linear relation between # of samples and
                 # duration of the time serie(in the function: remove_incorrect_time_series(phase_conf))
                     
         phase_path = os.path.join(self._sequence_directory, self._phases_by_sequence_directory)
@@ -766,7 +766,7 @@ class executions_analyzer:
         phases['StartTime'] = pd.to_datetime(phases['StartTime'], format=self._date_time_format)
         phases['EndTime'] = pd.to_datetime(phases['EndTime'], format=self._date_time_format)
         
-        phases = phases[(phases['Text'] == phase_conf._name) & (phases['ExecutionId'].isin(correct_exec_ids))] #select only the phases 
+        phases = phases[(phases['Text'] == phase_conf._name) & (phases['EntityId'].isin(correct_entity_ids))] #select only the phases 
                 #of the type of phase_conf and that were considerated to the analysis of the time serie
                 
                 
