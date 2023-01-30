@@ -28,6 +28,8 @@ try:
         for phase_conf in seq_conf._phases_conf: #iterate over each one_phase_config of the actual sequence
             
             analyzer.filter_samples_by_phases(phase_conf)
+            analyzer.save_data_csv(phase_conf)
+            
             analyzer.remove_incorrect_time_series(phase_conf, seq_conf._sequence_name)
             analyzer.calculate_dtw_metrics(phase_conf)
             #analyzer.determinate_epsilon(phase_conf, seq_conf._sequence_name)

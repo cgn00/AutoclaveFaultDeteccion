@@ -373,7 +373,7 @@ class executions_analyzer:
         
         phases.to_csv(os.path.join(self._base_directory, self._data_analysis_directory, self._sequence_directory, self._phases_by_sequence_directory) , index=False, header=True)
         
-        correct_samples.dropna(inplace=True) #remove the samples that not belong to the phase
+        correct_samples.dropna(inplace=True) #remove the samples that do not belong to the phase
         
         correct_samples.to_csv(os.path.join(path_to_save , phase_conf._name +  '_samples.csv'), index=False, header=True)
         
@@ -869,6 +869,7 @@ class executions_analyzer:
             
             time_series_list = []
             duration_time_series = []
+            times_of_samples = []
             
             for entity_id in failed_entity_ids: #iterate over each execution to obtain the time serie of each execution
                 
@@ -886,17 +887,27 @@ class executions_analyzer:
                 time_series_list.append(temp_time_serie) #add the time serie to the list of this execution
                 
                 duration_time_series.append(temp_duration)
+                
+                times_of_samples.append(times)
 
             # plot time series
             
             sub_plot = plt.subplot(3, 3, plot_index)
-            sub_plot.set_xbound(0.0, max(duration_time_series))
                         
-            for time_serie in time_series_list: plt.plot(time_serie) # plot each time serie
+            for (times, y) in zip(times_of_samples, time_series_list):
+                
+                x = []
+                for t in times:
+                    x.append(np.timedelta64(t-times[0], 's').astype(float)/60)
+                
+                plt.plot(x, y) # plot each time serie
+                plt.show()
+           
             plt.ylabel(var_name)
+            plt.xlabel('duration in minutes')
             
-            
-        plt. title(f'Sequence: {sequence_name} \t Phase: {phase_conf._name}')
+        plt.text(x=80, y=370, s=f'Sequence: {sequence_name} ----- Phase: {phase_conf._name} ----- Faults:')
+        #plt.title(f'Sequence: {sequence_name} ----- Phase: {phase_conf._name}')
         plt.show()
     
     
@@ -949,3 +960,6 @@ class executions_analyzer:
             
         plt. title(f'Sequence: {sequence_name} \t Phase: {phase_conf._name}')
         plt.show()
+        
+        
+    
