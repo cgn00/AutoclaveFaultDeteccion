@@ -729,7 +729,7 @@ class executions_analyzer:
         
         self.__plot_fault_time_series(sequence_name, phase_conf, data, failed_entity_ids)
         
-        self.__plot_corrects_time_series(sequence_name, phase_conf, data, good_entity_ids)
+        self.__plot_correct_time_series(sequence_name, phase_conf, data, good_entity_ids)
 
         
     
@@ -861,6 +861,11 @@ class executions_analyzer:
             data (df): data frame with the time serie of the executions
             failed_entity_ids (_type_): contains the EntityId of the failures
         """
+                
+        path_to_save = os.path.join(self._sequence_directory, phase_conf._name, 'time_series_pictures\\fault\\')
+        
+        if(os.path.exists(path_to_save) == False):
+            os.makedirs(path_to_save)
         
         plot_index = 0
         
@@ -900,18 +905,25 @@ class executions_analyzer:
                 for t in times:
                     x.append(np.timedelta64(t-times[0], 's').astype(float)/60)
                 
-                plt.plot(x, y) # plot each time serie
-                plt.show()
-           
-            plt.ylabel(var_name)
-            plt.xlabel('duration in minutes')
+                sub_plot.plot(x, y) # plot each time serie
+               
+            sub_plot.set_ylabel(var_name)
+            sub_plot.set_xlabel('duration in minutes')
+            #plt.clf() # clear the current figure to save the next
+            
+            plt.savefig(os.path.join(path_to_save, f'{var_name}.png'))  
+            plt.clf() # clear the current figure to save the next
             
         plt.text(x=80, y=370, s=f'Sequence: {sequence_name} ----- Phase: {phase_conf._name} ----- Faults:')
         #plt.title(f'Sequence: {sequence_name} ----- Phase: {phase_conf._name}')
+                
+        #plt.savefig(os.path.join(path_to_save, 'faults.png'))   
+        
         plt.show()
+        
     
     
-    def __plot_corrects_time_series(self, sequence_name, phase_conf, data, good_entity_ids):
+    def __plot_correct_time_series(self, sequence_name, phase_conf, data, good_entity_ids):
         """
         Private method used by the method: plot_time_series(self, phase_conf, sequence_name).
         Make 7 subplots, one for each variable with the time serie of the good EntityId
@@ -924,6 +936,11 @@ class executions_analyzer:
             good_entity_ids (_type_): contains the EntityId of the corrects executions
         """
         
+        path_to_save = os.path.join(self._sequence_directory, phase_conf._name, 'time_series_pictures\\good\\')
+        
+        if(os.path.exists(path_to_save) == False):
+            os.makedirs(path_to_save)
+    
         plot_index = 0
         
         for (var_id, var_name) in self._var_id_name_dict.items(): #iterate over each variableId (7..13)
@@ -931,9 +948,10 @@ class executions_analyzer:
             
             time_series_list = []
             duration_time_series = []
+            times_of_samples = []
             
             for entity_id in good_entity_ids: #iterate over each execution to obtain the time serie of each execution
-               
+                
                 temp_condition = data['EntityId'] ==  entity_id
                 
                 temp_time_serie = data.loc[temp_condition, f'Variable_Id_{var_id}'].to_numpy() #obtain the time serie of the variable in the iteration
@@ -948,18 +966,33 @@ class executions_analyzer:
                 time_series_list.append(temp_time_serie) #add the time serie to the list of this execution
                 
                 duration_time_series.append(temp_duration)
+                
+                times_of_samples.append(times)
 
             # plot time series
             
             sub_plot = plt.subplot(3, 3, plot_index)
-            sub_plot.set_xbound(0.0, max(duration_time_series))
                         
-            for time_serie in time_series_list: plt.plot(time_serie) # plot each time serie
+            for (times, y) in zip(times_of_samples, time_series_list):
+                
+                x = []
+                for t in times:
+                    x.append(np.timedelta64(t-times[0], 's').astype(float)/60)
+                
+                plt.plot(x, y) # plot each time serie
+                           
             plt.ylabel(var_name)
+            plt.xlabel('duration in minutes')
+            plt.savefig(os.path.join(path_to_save, f'{var_name}.png')) 
             
-            
-        plt. title(f'Sequence: {sequence_name} \t Phase: {phase_conf._name}')
+        plt.text(x=50, y=450, s=f'Sequence: {sequence_name} ----- Phase: {phase_conf._name} ----- Correct Entitys:')
+        #plt.title(f'Sequence: {sequence_name} ----- Phase: {phase_conf._name}')
+               
+        plt.savefig(os.path.join(path_to_save, 'good.png'))     
+        
         plt.show()
         
         
-    
+        
+        
+        
