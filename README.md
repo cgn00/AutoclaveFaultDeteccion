@@ -1,4 +1,4 @@
-# Project Title: Executions Analyzer
+# Project Title: Autoclave Fault Detection
 
 This project provides data exploration, manipulation, and clustering capabilities for a multi-variable execution dataset. It contains functionalities to explore the executions, group executions by their phase, and discover insights that might help improve the processes.
 
