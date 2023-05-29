@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+#File where the data is saved
+Datos/
+Data_Analysis/
+
 # Base directory to execute code
 baseDirectory.txt
 

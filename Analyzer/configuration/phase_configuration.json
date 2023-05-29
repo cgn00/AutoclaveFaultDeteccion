@@ -1,0 +1,162 @@
+{
+    "sequences_config":
+    [   
+        {   
+            "sequence_name": "Esterilización",
+            "phases_config":
+            [
+                {
+                    "name": "Calentamiento",
+                    "selection_criteria":
+                    {
+                        "samples_count": 10,
+                        "time_duration": 5
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Drenado",
+                    "selection_criteria":
+                    {
+                        "samples_count": 4,
+                        "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Enfriamiento",
+                    "selection_criteria":
+                    {
+                        "samples_count": 10,
+                        "time_duration": 5
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Esterilización",
+                    "selection_criteria":
+                    {
+                        "samples_count": 10,
+                        "time_duration": 5
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Fin de ciclo",
+                    "selection_criteria":
+                    {
+                        "samples_count": 1,
+                        "time_duration": 0
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Llenado",
+                    "selection_criteria":
+                    {
+                        "samples_count": 4,
+                        "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Prueba de junta",
+                    "selection_criteria":
+                    {
+                        "samples_count": 2,
+                        "time_duration": 1
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                }
+            ]
+        },
+        {   
+            "sequence_name": "Prueba de estanco",
+            "phases_config":
+            [
+                {
+                    "name": "Estabilización",
+                    "selection_criteria":
+                    {
+                        "samples_count": 4,
+                        "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Evaluación",
+                    "selection_criteria":
+                    {
+                        "samples_count": 4,
+                        "time_duration": 2
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Fin de ciclo",
+                    "selection_criteria":
+                    {
+                        "samples_count": 1,
+                        "time_duration": 0
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                },
+                {
+                    "name": "Presurización",
+                    "selection_criteria":
+                    {
+                        "samples_count": 2,
+                        "time_duration": 1
+                    },
+                    "dbscan_parameters":
+                    {
+                        "epsilon" : 3,
+                        "_min_points" : 20
+                    }
+                }
+            ]
+        }
+           
+    ]
+   
+}
