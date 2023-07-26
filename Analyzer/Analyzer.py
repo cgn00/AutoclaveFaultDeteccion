@@ -290,7 +290,10 @@ class executions_analyzer:
         Also generate a phase_name_data.csv file that contains one column for the respective variableId with the time serie of the samples
         Only saves the samples wichs 'SampleId' is containned in self.variables_ids.
         The samples saved are sorted by 'Time'
+        
         Args:
+        ----
+        
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase
         """
         
@@ -539,8 +542,8 @@ class executions_analyzer:
        
         
     def calculate_dtw_metrics(self, phase_conf):
-        """For each variable(in self.variables_ids) calculate the distances between the time series on each execution of the phase received.
-        These distances will be used to determinate clusters with DBSCAN to clasify good and fail executions of the phase received
+        """For each variable(in self.variables_ids) calculate the distances between the time series of each execution respect to all executions and keep the median of the distances.
+        These distances will be used to determinate clusters with DBSCAN to classify good and fail executions of the phase received
 
         Args:
             phase_conf (obj: phase_config from phase_conf.py module): here are the configurations of the phase        
@@ -921,7 +924,6 @@ class executions_analyzer:
         
         plt.show()
         
-    
     
     def __plot_correct_time_series(self, sequence_name, phase_conf, data, good_entity_ids):
         """
